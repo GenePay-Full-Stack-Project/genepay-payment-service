@@ -1,6 +1,6 @@
-package com.biopay.paymentservice.repository;
+package com.genepay.genepaypaymentservice.repository;
 
-import com.biopay.paymentservice.model.Admin;
+import com.genepay.genepaypaymentservice.model.Admin;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

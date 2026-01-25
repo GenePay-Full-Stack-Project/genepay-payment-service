@@ -1,6 +1,6 @@
 package com.genepay.genepaypaymentservice.config;
 
-import com.biopay.paymentservice.repository.AdminRepository;
+import com.genepay.genepaypaymentservice.repository.AdminRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
