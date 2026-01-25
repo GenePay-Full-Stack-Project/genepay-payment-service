@@ -1,4 +1,4 @@
-package com.biopay.paymentservice.config;
+package com.genepay.genepaypaymentservice.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

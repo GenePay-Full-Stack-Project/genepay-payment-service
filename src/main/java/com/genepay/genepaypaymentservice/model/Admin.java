@@ -1,4 +1,4 @@
-package com.biopay.paymentservice.model;
+package com.genepay.genepaypaymentservice.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

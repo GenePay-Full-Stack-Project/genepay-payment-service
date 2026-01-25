@@ -1,4 +1,4 @@
-package com.biopay.paymentservice.exception;
+package com.genepay.genepaypaymentservice.exception;
 
 public class PaymentProcessingException extends RuntimeException {
     public PaymentProcessingException(String message) {

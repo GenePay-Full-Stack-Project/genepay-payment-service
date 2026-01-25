@@ -1,4 +1,4 @@
-package com.biopay.paymentservice.config;
+package com.genepay.genepaypaymentservice.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -32,16 +32,16 @@ public class OpenApiConfig {
 
         return new OpenAPI()
                 .info(new Info()
-                        .title("BioPay Payment Service API")
+                        .title("GenePay Payment Service API")
                         .version(appVersion)
                         .description("Biometric-based payment system - Payment Service microservice for handling user registration, merchant onboarding, and payment processing with custom Banking System integration. All payments are automatically split: 97% to merchant, 3% to platform.")
                         .contact(new Contact()
-                                .name("BioPay Development Team")
-                                .email("dev@biopay.com")
-                                .url("https://github.com/Uni-DevNet/bio_pay_system"))
+                                .name("GenePay Development Team")
+                                .email("dev@genePay.com")
+                                .url("https://github.com/GenePay-Full-Stack-Project/genepay-core.git"))
                         .license(new License()
                                 .name("Proprietary")
-                                .url("https://biopay.com/license")))
+                                .url("https://genePay.com/license")))
                 .servers(List.of(
                         new Server()
                                 .url("http://localhost:8080" + contextPath)

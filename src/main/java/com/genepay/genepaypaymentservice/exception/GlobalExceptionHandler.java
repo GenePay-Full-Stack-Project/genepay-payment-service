@@ -1,6 +1,6 @@
-package com.biopay.paymentservice.exception;
+package com.genepay.genepaypaymentservice.exception;
 
-import com.biopay.paymentservice.dto.ApiResponse;
+import com.genepay.genepaypaymentservice.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

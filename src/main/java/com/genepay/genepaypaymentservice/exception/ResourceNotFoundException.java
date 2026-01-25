@@ -1,4 +1,4 @@
-package com.biopay.paymentservice.exception;
+package com.genepay.genepaypaymentservice.exception;
 
 public class ResourceNotFoundException extends RuntimeException {
     public ResourceNotFoundException(String message) {

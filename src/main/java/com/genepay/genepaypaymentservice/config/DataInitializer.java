@@ -1,6 +1,5 @@
-package com.biopay.paymentservice.config;
+package com.genepay.genepaypaymentservice.config;
 
-import com.biopay.paymentservice.model.Admin;
 import com.biopay.paymentservice.repository.AdminRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

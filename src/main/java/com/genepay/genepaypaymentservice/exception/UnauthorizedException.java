@@ -1,4 +1,4 @@
-package com.biopay.paymentservice.exception;
+package com.genepay.genepaypaymentservice.exception;
 
 public class UnauthorizedException extends RuntimeException {
     public UnauthorizedException(String message) {

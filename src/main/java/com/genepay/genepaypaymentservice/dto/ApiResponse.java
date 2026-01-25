@@ -1,4 +1,4 @@
-package com.biopay.paymentservice.dto;
+package com.genepay.genepaypaymentservice.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
