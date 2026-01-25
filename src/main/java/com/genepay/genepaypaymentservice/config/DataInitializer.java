@@ -1,5 +1,6 @@
 package com.genepay.genepaypaymentservice.config;
 
+import com.genepay.genepaypaymentservice.model.Admin;
 import com.genepay.genepaypaymentservice.repository.AdminRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
