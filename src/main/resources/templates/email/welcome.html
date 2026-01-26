@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to FaceWallet</title>
+
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: #f5f6fa;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .header {
+            background-color: #0a005a;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0;
+        }
+        .tagline {
+            color: #ddddff;
+            font-size: 14px;
+            margin-top: 8px;
+            font-weight: 300;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 22px;
+            color: #0a005a;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+        .message {
+            font-size: 15px;
+            color: #444;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .success-badge {
+            text-align: center;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .checkmark {
+            width: 80px;
+            height: 80px;
+            background-color: #0a005a;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+            margin-bottom: 18px;
+        }
+        .success-title {
+            font-size: 22px;
+            margin: 0;
+            color: #0a005a;
+            font-weight: 700;
+        }
+
+        .feature-box {
+            background-color: #f9f9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #0a005a;
+        }
+        .feature-box h3 {
+            color: #0a005a;
+            margin: 0 0 10px 0;
+            font-size: 17px;
+            font-weight: 600;
+        }
+        .feature-box p {
+            margin: 0;
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .footer {
+            background-color: #fafafa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            border-radius: 0 0 10px 10px;
+        }
+        .footer-text {
+            font-size: 13px;
+            color: #888;
+            margin: 5px 0;
+        }
+        .footer a {
+            color: #0a005a;
+            text-decoration: none;
+        }
+
+        @media only screen and (max-width: 600px) {
+            .content { padding: 30px 20px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+
+        <!-- Header -->
+        <div class="header">
+            <h1 class="logo">🔐 FaceWallet</h1>
+            <p class="tagline">Secure Face-Based Payments</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+
+            <!-- Success Badge -->
+            <div class="success-badge">
+                <div class="checkmark">✓</div>
+                <h2 class="success-title">Email Verified Successfully!</h2>
+            </div>
+
+            <h2 class="greeting">Welcome aboard, <span th:text="${fullName}">User</span>! 🎉</h2>
+
+            <p class="message">
+                Your FaceWallet account is now fully activated. You're ready to experience fast and secure 
+                face-based payments.
+            </p>
+
+            <!-- Features -->
+            <div class="feature-box">
+                <h3>🔗 Next Steps</h3>
+                <p>
+                    1. Link your payment card<br>
+                    2. Set up face authentication<br>
+                    3. Start making secure instant payments
+                </p>
+            </div>
+
+            <div class="feature-box">
+                <h3>🛡️ Your Security Matters</h3>
+                <p>
+                    FaceWallet uses advanced biometric verification and encryption to protect your identity 
+                    and payments.
+                </p>
+            </div>
+
+            <div class="feature-box">
+                <h3>📞 Need Help?</h3>
+                <p>
+                    Our support team is available 24/7 to assist with anything you need.
+                </p>
+            </div>
+
+            <p class="message">
+                Thank you for choosing FaceWallet — the future of payments starts now.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p class="footer-text">
+                Need help? Contact us at 
+                <a href="#" th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">
+                    support@facewallet.com
+                </a>
+            </p>
+
+            <p class="footer-text">
+                © <span th:text="${year}">2025</span> FaceWallet. All rights reserved.
+            </p>
+        </div>
+
+    </div>
+</body>
+</html>
