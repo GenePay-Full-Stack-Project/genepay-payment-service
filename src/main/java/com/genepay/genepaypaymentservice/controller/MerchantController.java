@@ -73,4 +73,59 @@ public class MerchantController {
         LoginResponse response = merchantService.loginMerchant(request);
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
+
+    @GetMapping("/{merchantId}")
+    @Operation(summary = "Get merchant by ID", description = "Retrieve merchant profile information")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Merchant found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Merchant not found")
+    })
+    public ResponseEntity<ApiResponse<MerchantResponse>> getMerchant(
+            @Parameter(description = "Merchant ID") @PathVariable Long merchantId) {
+        log.info("Get merchant request for: {}", merchantId);
+        MerchantResponse merchant = merchantService.getMerchantById(merchantId);
+        return ResponseEntity.ok(ApiResponse.success(merchant));
+    }
+
+    @PutMapping("/{merchantId}")
+    @Operation(summary = "Update merchant profile", description = "Update merchant profile information (all fields are optional)")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Merchant updated successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input or duplicate email/phone/business name"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Merchant not found")
+    })
+    public ResponseEntity<ApiResponse<MerchantResponse>> updateMerchant(
+            @Parameter(description = "Merchant ID") @PathVariable Long merchantId,
+            @Valid @RequestBody UpdateMerchantRequest request) {
+        log.info("Update merchant request for: {}", merchantId);
+        MerchantResponse merchant = merchantService.updateMerchant(merchantId, request);
+        return ResponseEntity.ok(ApiResponse.success("Merchant updated successfully", merchant));
+    }
+
+    @PostMapping("/verify-token")
+    @Operation(summary = "Verify JWT token", description = "Verify if the JWT token is valid and get token information")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Token verification result returned"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    public ResponseEntity<ApiResponse<TokenVerifyResponse>> verifyToken(
+            @Valid @RequestBody VerifyTokenRequest request) {
+        log.info("Merchant token verification request");
+        TokenVerifyResponse response = merchantService.verifyToken(request.getToken());
+        return ResponseEntity.ok(ApiResponse.success("Token verified", response));
+    }
+
+    @PostMapping("/refresh-token")
+    @Operation(summary = "Refresh JWT token", description = "Generate new access and refresh tokens using a valid refresh token")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Token refreshed successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid or expired refresh token"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Merchant not found")
+    })
+    public ResponseEntity<ApiResponse<RefreshTokenResponse>> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request) {
+        log.info("Merchant token refresh request");
+        RefreshTokenResponse response = merchantService.refreshToken(request.getRefreshToken());
+        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", response));
+    }
 }

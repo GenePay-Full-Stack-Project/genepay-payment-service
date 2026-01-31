@@ -198,6 +198,74 @@ public class MerchantService {
                 .build();
     }
 
+    public MerchantResponse getMerchantById(Long merchantId) {
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+        return modelMapper.map(merchant, MerchantResponse.class);
+    }
+
+    public Merchant getMerchantEntityById(Long merchantId) {
+        return merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+    }
+
+    @Transactional
+    public MerchantResponse updateMerchant(Long merchantId, UpdateMerchantRequest request) {
+        log.info("Updating merchant profile: {}", merchantId);
+
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+
+        // Update email if provided and different
+        if (request.getEmail() != null && !request.getEmail().equals(merchant.getEmail())) {
+            if (merchantRepository.existsByEmail(request.getEmail())) {
+                throw new BadRequestException("Email already registered");
+            }
+            merchant.setEmail(request.getEmail());
+        }
+
+        // Update password if provided
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            merchant.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        // Update phone number if provided and different
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().equals(merchant.getPhoneNumber())) {
+            if (merchantRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+                throw new BadRequestException("Phone number already registered");
+            }
+            merchant.setPhoneNumber(request.getPhoneNumber());
+        }
+
+        // Update business name if provided and different
+        if (request.getBusinessName() != null && !request.getBusinessName().equals(merchant.getBusinessName())) {
+            if (merchantRepository.existsByBusinessName(request.getBusinessName())) {
+                throw new BadRequestException("Business name already registered");
+            }
+            merchant.setBusinessName(request.getBusinessName());
+        }
+
+        // Update other fields if provided
+        if (request.getOwnerName() != null) {
+            merchant.setOwnerName(request.getOwnerName());
+        }
+
+        if (request.getBusinessAddress() != null) {
+            merchant.setBusinessAddress(request.getBusinessAddress());
+        }
+
+        if (request.getBusinessType() != null) {
+            merchant.setBusinessType(request.getBusinessType());
+        }
+
+        merchant = merchantRepository.save(merchant);
+        log.info("Merchant profile updated successfully: {}", merchantId);
+
+        return modelMapper.map(merchant, MerchantResponse.class);
+    }
+
+
+
     private void handleFailedLogin(Merchant merchant) {
         int attempts = merchant.getFailedLoginAttempts() + 1;
         merchant.setFailedLoginAttempts(attempts);
@@ -212,5 +280,91 @@ public class MerchantService {
 
     private String generateVerificationCode() {
         return String.format("%06d", (int) (Math.random() * 1000000));
+    }
+
+    public TokenVerifyResponse verifyToken(String token) {
+        log.info("Verifying merchant token");
+
+        try {
+            String email = jwtUtil.extractEmail(token);
+            Long merchantId = jwtUtil.extractUserId(token);
+            String userType = jwtUtil.extractUserType(token);
+
+            // Check if merchant exists
+            merchantRepository.findById(merchantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+
+            // Validate token
+            Boolean isValid = jwtUtil.validateToken(token, email);
+
+            if (!isValid) {
+                return TokenVerifyResponse.builder()
+                        .valid(false)
+                        .build();
+            }
+
+            Long expiresAt = jwtUtil.extractExpiration(token).getTime();
+
+            return TokenVerifyResponse.builder()
+                    .valid(true)
+                    .email(email)
+                    .userId(merchantId)
+                    .userType(userType)
+                    .expiresAt(expiresAt)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Merchant token verification failed: {}", e.getMessage());
+            return TokenVerifyResponse.builder()
+                    .valid(false)
+                    .build();
+        }
+    }
+
+    @Transactional
+    public RefreshTokenResponse refreshToken(String refreshToken) {
+        log.info("Refreshing merchant token");
+
+        try {
+            String email = jwtUtil.extractEmail(refreshToken);
+            Long merchantId = jwtUtil.extractUserId(refreshToken);
+            String userType = jwtUtil.extractUserType(refreshToken);
+
+            // Check if merchant exists
+            Merchant merchant = merchantRepository.findById(merchantId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+
+            // Validate refresh token
+            Boolean isValid = jwtUtil.validateToken(refreshToken, email);
+
+            if (!isValid) {
+                throw new UnauthorizedException("Invalid or expired refresh token");
+            }
+
+            // Check merchant status
+            if (merchant.getStatus() != Merchant.MerchantStatus.ACTIVE &&
+                    merchant.getStatus() != Merchant.MerchantStatus.PENDING) {
+                throw new UnauthorizedException("Account is not active");
+            }
+
+            // Generate new tokens
+            String newToken = jwtUtil.generateToken(email, userType, merchantId);
+            String newRefreshToken = jwtUtil.generateRefreshToken(email, userType, merchantId);
+
+            log.info("Token refreshed successfully for merchant: {}", merchantId);
+
+            return RefreshTokenResponse.builder()
+                    .token(newToken)
+                    .refreshToken(newRefreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(86400000L) // 24 hours
+                    .build();
+
+        } catch (ResourceNotFoundException | UnauthorizedException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Merchant token refresh failed: {}", e.getMessage());
+            throw new UnauthorizedException("Invalid or expired refresh token");
+        }
     }
 }
