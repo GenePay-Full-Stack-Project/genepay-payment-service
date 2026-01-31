@@ -31,6 +31,8 @@ public class MerchantService {
     private final java.util.Map<String, String> tempVerificationCodes = new ConcurrentHashMap<>();
     private final java.util.Map<String, LocalDateTime> tempExpiry = new ConcurrentHashMap<>();
     private final java.util.Map<String, LocalDateTime> verifiedEmails = new ConcurrentHashMap<>();
+    // Rate limiting for verification code sending
+    private final java.util.Map<String, LocalDateTime> lastCodeSentTime = new ConcurrentHashMap<>();
 
     public void sendVerificationCode(String email) {
         log.info("Sending verification code to merchant: {}", email);
@@ -42,12 +44,19 @@ public class MerchantService {
             throw new BadRequestException("Email already registered");
         }
 
+        // Rate limiting: Allow sending code only once per minute
+        LocalDateTime lastSent = lastCodeSentTime.get(normalizedEmail);
+        if (lastSent != null && lastSent.isAfter(LocalDateTime.now().minusMinutes(1))) {
+            throw new BadRequestException("Please wait before requesting another verification code");
+        }
+
         String verificationCode = generateVerificationCode();
         log.info("Verification code: {}", verificationCode);
         LocalDateTime expiryTime = LocalDateTime.now().plusHours(24);
 
         tempVerificationCodes.put(normalizedEmail, verificationCode);
         tempExpiry.put(normalizedEmail, expiryTime);
+        lastCodeSentTime.put(normalizedEmail, LocalDateTime.now());
 
         // Send verification email
         try {
