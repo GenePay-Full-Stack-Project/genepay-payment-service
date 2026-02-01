@@ -15,3 +15,4 @@ public class RefreshTokenResponse {
     private String tokenType = "Bearer";
     private Long expiresIn;
 }
+

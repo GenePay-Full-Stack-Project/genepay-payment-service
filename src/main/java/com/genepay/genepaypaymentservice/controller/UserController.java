@@ -82,12 +82,12 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "Face linked successfully"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<com.biopay.paymentservice.dto.ApiResponse<UserResponse>> linkFace(
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<UserResponse>> linkFace(
             @Parameter(description = "User ID") @PathVariable Long userId,
             @Valid @RequestBody LinkFaceRequest request) {
         log.info("Face linking request for user: {}", userId);
         UserResponse user = userService.linkFace(userId, request);
-        return ResponseEntity.ok(com.biopay.paymentservice.dto.ApiResponse.success("Face linked successfully", user));
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Face linked successfully", user));
     }
 
     @GetMapping("/{userId}") //
@@ -96,11 +96,11 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "User found"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<com.biopay.paymentservice.dto.ApiResponse<UserResponse>> getUser(
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<UserResponse>> getUser(
             @Parameter(description = "User ID") @PathVariable Long userId) {
         log.info("Get user request for: {}", userId);
         UserResponse user = userService.getUserById(userId);
-        return ResponseEntity.ok(com.biopay.paymentservice.dto.ApiResponse.success(user));
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success(user));
     }
 
     @GetMapping("/email/{email}") //
@@ -109,11 +109,11 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "User found"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<com.biopay.paymentservice.dto.ApiResponse<UserResponse>> getUserByEmail(
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<UserResponse>> getUserByEmail(
             @Parameter(description = "User email") @PathVariable String email) {
         log.info("Get user by email request for: {}", email);
         UserResponse user = userService.getUserByEmail(email);
-        return ResponseEntity.ok(com.biopay.paymentservice.dto.ApiResponse.success(user));
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success(user));
     }
 
     @GetMapping //
@@ -121,10 +121,10 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
     })
-    public ResponseEntity<com.biopay.paymentservice.dto.ApiResponse<java.util.List<UserResponse>>> getAllUsers() {
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<java.util.List<UserResponse>>> getAllUsers() {
         log.info("Get all users request");
         java.util.List<UserResponse> users = userService.getAllUsers();
-        return ResponseEntity.ok(com.biopay.paymentservice.dto.ApiResponse.success(users));
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success(users));
     }
 
     @PutMapping("/{userId}")//
@@ -134,12 +134,12 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Invalid input or duplicate email/phone"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<com.biopay.paymentservice.dto.ApiResponse<UserResponse>> updateUser(
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<UserResponse>> updateUser(
             @Parameter(description = "User ID") @PathVariable Long userId,
             @Valid @RequestBody UpdateUserRequest request) {
         log.info("Update user request for: {}", userId);
         UserResponse user = userService.updateUser(userId, request);
-        return ResponseEntity.ok(com.biopay.paymentservice.dto.ApiResponse.success("User updated successfully", user));
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("User updated successfully", user));
     }
 
     @PostMapping("/verify-token") //
@@ -148,11 +148,11 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "Token verification result returned"),
             @ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<com.biopay.paymentservice.dto.ApiResponse<TokenVerifyResponse>> verifyToken(
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<TokenVerifyResponse>> verifyToken(
             @Valid @RequestBody VerifyTokenRequest request) {
         log.info("Token verification request");
         TokenVerifyResponse response = userService.verifyToken(request.getToken());
-        return ResponseEntity.ok(com.biopay.paymentservice.dto.ApiResponse.success("Token verified", response));
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Token verified", response));
     }
 
     @PostMapping("/refresh-token") //
@@ -162,11 +162,11 @@ public class UserController {
             @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<com.biopay.paymentservice.dto.ApiResponse<RefreshTokenResponse>> refreshToken(
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<RefreshTokenResponse>> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request) {
         log.info("Token refresh request");
         RefreshTokenResponse response = userService.refreshToken(request.getRefreshToken());
-        return ResponseEntity.ok(com.biopay.paymentservice.dto.ApiResponse.success("Token refreshed successfully", response));
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Token refreshed successfully", response));
     }
 
     @DeleteMapping("/{userId}/delete-face")//
@@ -176,11 +176,11 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "No face enrolled for this user"),
             @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<com.biopay.paymentservice.dto.ApiResponse<UserResponse>> deleteFace(
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<UserResponse>> deleteFace(
             @Parameter(description = "User ID") @PathVariable Long userId) {
         log.info("Delete face request for user: {}", userId);
         UserResponse user = userService.deleteFace(userId);
-        return ResponseEntity.ok(com.biopay.paymentservice.dto.ApiResponse.success("Face deleted successfully", user));
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Face deleted successfully", user));
     }
     
 }
