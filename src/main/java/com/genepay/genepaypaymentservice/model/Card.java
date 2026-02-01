@@ -31,13 +31,13 @@ public class Card {
     private Merchant merchant;
 
     @Column(nullable = false, unique = true)
-    private String paymentToken; // Banking System payment token (UUID)
+    private String paymentToken;
 
     @Column(nullable = false)
-    private String cardLast4; // Last 4 digits of card
+    private String cardLast4;
 
     @Column
-    private String cardBrand; // Visa, Mastercard, etc.
+    private String cardBrand;
 
     @Column
     private String expiryMonth;
@@ -54,7 +54,7 @@ public class Card {
     private Boolean isActive = true;
 
     @Column
-    private String nickname; // Optional card nickname (e.g., "Personal Card", "Business Card")
+    private String nickname;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -67,12 +67,10 @@ public class Card {
     @Column
     private LocalDateTime lastUsedAt;
 
-    // Helper method to check if card belongs to user
     public boolean belongsToUser() {
         return user != null;
     }
 
-    // Helper method to check if card belongs to merchant
     public boolean belongsToMerchant() {
         return merchant != null;
     }
