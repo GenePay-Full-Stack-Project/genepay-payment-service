@@ -330,4 +330,23 @@ public class PaymentService {
     }
 
 
+    public TransactionResponse getTransaction(String transactionId) {
+        Transaction transaction = transactionRepository.findByTransactionIdWithDetails(transactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found"));
+        return mapToTransactionResponse(transaction);
+    }
+
+    public Page<TransactionResponse> getUserTransactions(Long userId, Pageable pageable) {
+        return transactionRepository.findByUserId(userId, pageable)
+                .map(this::mapToTransactionResponse);
+    }
+
+    public Double getUserTotalSpends(Long userId) {
+        List<Transaction> transactions = transactionRepository.findByUserIdAndStatus(userId, Transaction.TransactionStatus.COMPLETED);
+        return transactions.stream()
+                .map(Transaction::getAmount)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add)
+                .doubleValue();
+    }
+
 }

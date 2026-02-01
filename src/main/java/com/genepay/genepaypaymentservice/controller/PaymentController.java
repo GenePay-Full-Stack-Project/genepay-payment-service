@@ -7,11 +7,15 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
 
 
 @Slf4j
@@ -65,6 +69,46 @@ public class PaymentController {
         PaymentVerifyResponse response = paymentService.verifyAndCharge(request);
         return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Payment processed", response));
     }
+
+    @GetMapping("/{transactionId}")
+    @Operation(summary = "Get transaction details", description = "Retrieve transaction information by transaction ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Transaction found"),
+            @ApiResponse(responseCode = "404", description = "Transaction not found")
+    })
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<TransactionResponse>> getTransaction(
+            @Parameter(description = "Transaction ID") @PathVariable String transactionId) {
+        log.info("Get transaction request for: {}", transactionId);
+        TransactionResponse transaction = paymentService.getTransaction(transactionId);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success(transaction));
+    }
+
+
+    @GetMapping("/user/{userId}")
+    @Operation(summary = "Get user transactions", description = "Retrieve paginated transaction history for a user")
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<Page<TransactionResponse>>> getUserTransactions(
+            @Parameter(description = "User ID") @PathVariable Long userId,
+            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+        log.info("Get transactions for user: {}", userId);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<TransactionResponse> transactions = paymentService.getUserTransactions(userId, pageable);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success(transactions));
+    }
+
+
+    @GetMapping("/user/{userId}/total-spends")
+    @Operation(summary = "Get user total spends", description = "Calculate total amount spent by user from completed transactions")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Total spends calculated successfully")
+    })
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<Double>> getUserTotalSpends(
+            @Parameter(description = "User ID") @PathVariable Long userId) {
+        log.info("Get total spends for user: {}", userId);
+        Double total = paymentService.getUserTotalSpends(userId);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Total spends calculated", total));
+    }
+
 
 
 }
