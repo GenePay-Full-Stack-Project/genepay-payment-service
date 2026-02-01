@@ -349,4 +349,28 @@ public class PaymentService {
                 .doubleValue();
     }
 
+
+    public Page<TransactionResponse> getMerchantTransactions(Long merchantId, Pageable pageable) {
+        return transactionRepository.findByMerchantId(merchantId, pageable)
+                .map(this::mapToTransactionResponse);
+    }
+
+
+    public UserResponse identifyUserByFace(String faceData) {
+        log.info("Identifying user by face");
+        
+        // Call biometric service to search for matching face
+        String userId = biometricServiceClient.searchFace(faceData);
+        
+        if (userId == null) {
+            throw new ResourceNotFoundException("No matching user found");
+        }
+        
+        // Get user details
+        UserResponse user = userService.getUserById(Long.parseLong(userId));
+        
+        log.info("User identified: {}", userId);
+        return user;
+    }
+
 }
