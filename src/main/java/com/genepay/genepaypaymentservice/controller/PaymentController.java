@@ -52,4 +52,19 @@ public class PaymentController {
     }
 
 
+    @PostMapping("/verify")
+    @Operation(summary = "Verify and charge payment", description = "Verify user identity via biometric and complete payment via Banking System")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Payment processed"),
+            @ApiResponse(responseCode = "401", description = "Biometric verification failed"),
+            @ApiResponse(responseCode = "500", description = "Payment processing error")
+    })
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<PaymentVerifyResponse>> verifyAndCharge(
+            @Valid @RequestBody PaymentVerifyRequest request) {
+        log.info("Payment verification request for transaction: {}", request.getTransactionId());
+        PaymentVerifyResponse response = paymentService.verifyAndCharge(request);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Payment processed", response));
+    }
+
+
 }
