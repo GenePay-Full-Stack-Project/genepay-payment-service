@@ -4,12 +4,15 @@ import com.genepay.genepaypaymentservice.dto.*;
 import com.genepay.genepaypaymentservice.exception.BadRequestException;
 import com.genepay.genepaypaymentservice.exception.PaymentProcessingException;
 import com.genepay.genepaypaymentservice.exception.ResourceNotFoundException;
+import com.genepay.genepaypaymentservice.model.Merchant;
 import com.genepay.genepaypaymentservice.model.Transaction;
 import com.genepay.genepaypaymentservice.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.UUID;
+
 
 @Slf4j
 @Service
@@ -19,6 +22,8 @@ public class PaymentService {
     private final TransactionRepository transactionRepository;
     private final BankingServiceClient bankingServiceClient;
     private final CardService cardService;
+    private final MerchantService merchantService;
+
 
     @Transactional
     public TransactionResponse refundTransaction(String transactionId, String reason) {
@@ -100,4 +105,44 @@ public class PaymentService {
                 .completedAt(transaction.getCompletedAt())
                 .build();
     }
+
+    @Transactional
+    public PaymentInitiateResponse initiatePayment(PaymentInitiateRequest request) {
+        log.info("Initiating payment for merchant {}", request.getMerchantId());
+
+        // Validate merchant
+        MerchantResponse merchantResponse = merchantService.getMerchantById(request.getMerchantId());
+        if (!merchantResponse.getCardLinked()) {
+            throw new BadRequestException("Merchant has not linked a payment card");
+        }
+
+        // Get merchant entity
+        Merchant merchant = merchantService.getMerchantEntityById(request.getMerchantId());
+
+        // Create transaction record WITHOUT user - user will be identified during verification
+        Transaction transaction = Transaction.builder()
+                .transactionId(UUID.randomUUID().toString())
+                .user(null)  // User will be linked during face verification
+                .merchant(merchant)
+                .amount(request.getAmount())
+                .currency(request.getCurrency())
+                .description(request.getDescription())
+                .status(Transaction.TransactionStatus.PENDING)
+                .type(Transaction.TransactionType.PAYMENT)
+                .biometricVerified(false)
+                .build();
+
+        transaction = transactionRepository.save(transaction);
+
+        log.info("Payment initiated with transaction ID: {} (User will be identified during verification)", transaction.getTransactionId());
+
+        return PaymentInitiateResponse.builder()
+                .transactionId(transaction.getTransactionId())
+                .sessionId(transaction.getTransactionId())
+                .status("PENDING")
+                .message("Please scan customer's face to identify and process payment")
+                .build();
+    }
+
+
 }

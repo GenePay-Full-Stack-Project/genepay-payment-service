@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+
 
 @Slf4j
 @RestController
@@ -34,4 +36,20 @@ public class PaymentController {
         TransactionResponse transaction = paymentService.refundTransaction(transactionId, reason);
         return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Transaction refunded", transaction));
     }
+
+
+    @PostMapping("/initiate")
+    @Operation(summary = "Initiate payment", description = "Create a pending payment transaction that requires biometric verification")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Payment initiated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or merchant not ready for payments")
+    })
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<PaymentInitiateResponse>> initiatePayment(
+            @Valid @RequestBody PaymentInitiateRequest request) {
+        log.info("Payment initiation request for merchant {}", request.getMerchantId());
+        PaymentInitiateResponse response = paymentService.initiatePayment(request);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Payment initiated", response));
+    }
+
+
 }
