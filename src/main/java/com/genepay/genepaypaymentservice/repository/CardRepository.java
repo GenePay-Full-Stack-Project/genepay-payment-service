@@ -25,4 +25,9 @@ public interface CardRepository extends JpaRepository<Card, Long> {
     List<Card> findByMerchantId(Long merchantId);
 
     Optional<Card> findByPaymentToken(String paymentToken);
+
+    Optional<Card> findByUserIdAndIsDefaultTrue(Long userId);
+
+    Optional<Card> findByMerchantIdAndIsDefaultTrue(Long merchantId);
+
 }
