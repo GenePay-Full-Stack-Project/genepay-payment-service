@@ -9,8 +9,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+
 
 @Slf4j
 @RestController
@@ -34,4 +40,17 @@ public class PaymentController {
         TransactionResponse transaction = paymentService.refundTransaction(transactionId, reason);
         return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Transaction refunded", transaction));
     }
+
+    @GetMapping("/merchant/{merchantId}")
+    @Operation(summary = "Get merchant transactions", description = "Retrieve paginated transaction history for a merchant")
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<Page<TransactionResponse>>> getMerchantTransactions(
+            @Parameter(description = "Merchant ID") @PathVariable Long merchantId,
+            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+        log.info("Get transactions for merchant: {}", merchantId);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<TransactionResponse> transactions = paymentService.getMerchantTransactions(merchantId, pageable);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success(transactions));
+    }
+
 }

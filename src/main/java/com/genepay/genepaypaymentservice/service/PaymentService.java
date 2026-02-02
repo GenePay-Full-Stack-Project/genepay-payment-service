@@ -8,6 +8,8 @@ import com.genepay.genepaypaymentservice.model.Transaction;
 import com.genepay.genepaypaymentservice.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,6 +83,12 @@ public class PaymentService {
             throw new PaymentProcessingException("Refund processing failed: " + e.getMessage());
         }
     }
+    public Page<TransactionResponse> getMerchantTransactions(Long merchantId, Pageable pageable) {
+        return transactionRepository.findByMerchantId(merchantId, pageable)
+                .map(this::mapToTransactionResponse);
+    }
+
+
 
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
         return TransactionResponse.builder()
