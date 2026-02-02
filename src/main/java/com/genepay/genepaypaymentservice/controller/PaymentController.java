@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,18 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    @PostMapping("/initiate")
+    @Operation(summary = "Initiate payment", description = "Create a pending payment transaction that requires biometric verification")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Payment initiated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request or merchant not ready for payments")
+    })
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<PaymentInitiateResponse>> initiatePayment(
+            @Valid @RequestBody PaymentInitiateRequest request) {
+        log.info("Payment initiation request for merchant {}", request.getMerchantId());
+        PaymentInitiateResponse response = paymentService.initiatePayment(request);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Payment initiated", response));
+    }
 
     @PostMapping("/{transactionId}/refund")
     @Operation(summary = "Refund transaction", description = "Process a refund for a completed transaction")
@@ -51,6 +64,18 @@ public class PaymentController {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<TransactionResponse> transactions = paymentService.getMerchantTransactions(merchantId, pageable);
         return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success(transactions));
+    }
+    @GetMapping("/{transactionId}")
+    @Operation(summary = "Get transaction details", description = "Retrieve transaction information by transaction ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Transaction found"),
+            @ApiResponse(responseCode = "404", description = "Transaction not found")
+    })
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<TransactionResponse>> getTransaction(
+            @Parameter(description = "Transaction ID") @PathVariable String transactionId) {
+        log.info("Get transaction request for: {}", transactionId);
+        TransactionResponse transaction = paymentService.getTransaction(transactionId);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success(transaction));
     }
 
 }
