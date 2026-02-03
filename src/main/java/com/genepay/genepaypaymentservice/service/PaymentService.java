@@ -330,4 +330,47 @@ public class PaymentService {
     }
 
 
+    public TransactionResponse getTransaction(String transactionId) {
+        Transaction transaction = transactionRepository.findByTransactionIdWithDetails(transactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found"));
+        return mapToTransactionResponse(transaction);
+    }
+
+    public Page<TransactionResponse> getUserTransactions(Long userId, Pageable pageable) {
+        return transactionRepository.findByUserId(userId, pageable)
+                .map(this::mapToTransactionResponse);
+    }
+
+    public Double getUserTotalSpends(Long userId) {
+        List<Transaction> transactions = transactionRepository.findByUserIdAndStatus(userId, Transaction.TransactionStatus.COMPLETED);
+        return transactions.stream()
+                .map(Transaction::getAmount)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add)
+                .doubleValue();
+    }
+
+
+    public Page<TransactionResponse> getMerchantTransactions(Long merchantId, Pageable pageable) {
+        return transactionRepository.findByMerchantId(merchantId, pageable)
+                .map(this::mapToTransactionResponse);
+    }
+
+
+    public UserResponse identifyUserByFace(String faceData) {
+        log.info("Identifying user by face");
+        
+        // Call biometric service to search for matching face
+        String userId = biometricServiceClient.searchFace(faceData);
+        
+        if (userId == null) {
+            throw new ResourceNotFoundException("No matching user found");
+        }
+        
+        // Get user details
+        UserResponse user = userService.getUserById(Long.parseLong(userId));
+        
+        log.info("User identified: {}", userId);
+        return user;
+    }
+
 }
