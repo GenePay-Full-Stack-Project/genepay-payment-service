@@ -1,7 +1,9 @@
 package com.genepay.genepaypaymentservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.genepay.genepaypaymentservice.dto.LoginResponse;
 import com.genepay.genepaypaymentservice.dto.SendVerificationCodeRequest;
+import com.genepay.genepaypaymentservice.dto.UserLoginRequest;
 import com.genepay.genepaypaymentservice.dto.UserRegistrationRequest;
 import com.genepay.genepaypaymentservice.dto.UserResponse;
 import com.genepay.genepaypaymentservice.dto.VerifyEmailRequest;
@@ -35,9 +37,6 @@ class UserControllerTest {
  
     
     
-   
-    // login-user
-
     // send-verification-code unit testing scripts 
 
     @Test
@@ -270,5 +269,94 @@ class UserControllerTest {
 
         // Verify service was not called
         verify(userService, never()).registerUser(any(UserRegistrationRequest.class));
+    }
+
+
+
+    // login user unit testing scripts 
+
+    @Test
+    void loginUser_Success() throws Exception {
+        // Arrange
+        UserLoginRequest request = new UserLoginRequest();
+        request.setNicNumber("123456789V");
+        request.setPassword("Password123!");
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setEmail("test@example.com");
+        userResponse.setFullName("John Doe");
+        userResponse.setNicNumber("123456789V");
+
+        LoginResponse loginResponse = new LoginResponse();
+        loginResponse.setToken("mock-jwt-token");
+        loginResponse.setRefreshToken("mock-refresh-token");
+        loginResponse.setTokenType("Bearer");
+        loginResponse.setExpiresIn(3600L);
+        loginResponse.setUser(userResponse);
+
+        when(userService.loginUser(any(UserLoginRequest.class))).thenReturn(loginResponse);
+
+        // Act & Assert
+        mockMvc.perform(post("/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Login successful"))
+                .andExpect(jsonPath("$.data.token").value("mock-jwt-token"));
+
+        // Verify service was called
+        verify(userService, times(1)).loginUser(any(UserLoginRequest.class));
+    }
+
+    @Test
+    void loginUser_WithEmptyNicNumber() throws Exception {
+        // Arrange
+        UserLoginRequest request = new UserLoginRequest();
+        request.setNicNumber("");
+        request.setPassword("Password123!");
+
+        // Act & Assert
+        mockMvc.perform(post("/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        // Verify service was not called
+        verify(userService, never()).loginUser(any(UserLoginRequest.class));
+    }
+
+    @Test
+    void loginUser_WithEmptyPassword() throws Exception {
+        // Arrange
+        UserLoginRequest request = new UserLoginRequest();
+        request.setNicNumber("123456789V");
+        request.setPassword("");
+
+        // Act & Assert
+        mockMvc.perform(post("/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        // Verify service was not called
+        verify(userService, never()).loginUser(any(UserLoginRequest.class));
+    }
+
+    @Test
+    void loginUser_WithNullFields() throws Exception {
+        // Arrange
+        UserLoginRequest request = new UserLoginRequest();
+        request.setNicNumber(null);
+        request.setPassword(null);
+
+        // Act & Assert
+        mockMvc.perform(post("/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        // Verify service was not called
+        verify(userService, never()).loginUser(any(UserLoginRequest.class));
     }
 }
