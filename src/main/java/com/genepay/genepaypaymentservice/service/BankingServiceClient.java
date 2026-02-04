@@ -66,6 +66,48 @@ public class BankingServiceClient {
     }
 
     /**
+     * Verify card details and get payment token
+     * @param cardNumber 16-digit card number
+     * @param cvv Card CVV
+     * @param expiry Card expiry (MM/YY)
+     * @return Payment token if valid, null otherwise
+     */
+    public String verifyCardAndGetToken(String cardNumber, String cvv, String expiry) {
+        try {
+            WebClient webClient = webClientBuilder.baseUrl(bankingServiceUrl).build();
+            
+            Map<String, String> request = Map.of(
+                    "cardNumber", cardNumber,
+                    "cvv", cvv,
+                    "expiry", expiry
+            );
+            
+            Map<String, Object> response = webClient.post()
+                    .uri("/api/external/verify-card")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(java.time.Duration.ofMillis(timeout))
+                    .block();
+            
+            if (response != null && response.containsKey("paymentToken")) {
+                String token = (String) response.get("paymentToken");
+                String last4 = cardNumber.substring(cardNumber.length() - 4);
+                log.info("Card verified successfully. Last 4 digits: {}", last4);
+                return token;
+            }
+            
+            log.warn("Card verification failed: No token returned");
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to verify card with banking service: {}", e.getMessage());
+            return null;
+        }
+    }
+
+
+
+    /**
      * Get BioPay platform payment token
      * @return Platform payment token
      */

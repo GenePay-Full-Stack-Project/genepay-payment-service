@@ -1,5 +1,6 @@
 package com.genepay.genepaypaymentservice.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,10 +10,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RefreshTokenResponse {
-    private String token;
-    private String refreshToken;
-    private String tokenType = "Bearer";
-    private Long expiresIn;
-}
+public class LinkFaceRequest {
 
+    @NotBlank(message = "Face ID is required")
+    private String faceId; // From biometric service
+}

@@ -57,4 +57,60 @@ public class BiometricServiceClient {
             throw new RuntimeException("Face search failed: " + e.getMessage());
         }
     }
+
+    public Boolean updateFaceUser(Long userId, String faceId) {
+        try {
+            WebClient webClient = webClientBuilder.baseUrl(biometricServiceUrl).build();
+            
+            Map<String, Object> request = Map.of(
+                    "user_id", userId,
+                    "face_id", faceId
+            );
+
+            Map<String, Object> response = webClient.put()
+                    .uri("/biometric/update-face-user")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(java.time.Duration.ofMillis(timeout))
+                    .block();
+
+            if (response != null && response.containsKey("success")) {
+                return (Boolean) response.get("success");
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error updating face user in biometric service", e);
+            throw new RuntimeException("Face user update failed: " + e.getMessage());
+        }
+    }
+
+    public Boolean deleteFace(Long userId) {
+        try {
+            WebClient webClient = webClientBuilder.baseUrl(biometricServiceUrl).build();
+            
+            Map<String, Object> request = Map.of(
+                    "user_id", userId
+            );
+
+            Map<String, Object> response = webClient.method(org.springframework.http.HttpMethod.DELETE)
+                    .uri("/biometric/delete")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(java.time.Duration.ofMillis(timeout))
+                    .block();
+
+            if (response != null && response.containsKey("success")) {
+                return (Boolean) response.get("success");
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error deleting face in biometric service", e);
+            throw new RuntimeException("Face deletion failed: " + e.getMessage());
+        }
+    }
+
+
+
 }

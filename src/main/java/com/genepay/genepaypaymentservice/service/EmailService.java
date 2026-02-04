@@ -52,7 +52,7 @@ public class EmailService {
 
             helper.setFrom(fromEmail, fromName);
             helper.setTo(toEmail);
-            helper.setSubject("Verify Your BioPay Account - Verification Code");
+            helper.setSubject("Verify Your GenePay Account - Verification Code");
             helper.setText(htmlContent, true);
 
             mailSender.send(mimeMessage);
@@ -84,7 +84,7 @@ public class EmailService {
 
             helper.setFrom(fromEmail, fromName);
             helper.setTo(toEmail);
-            helper.setSubject("Welcome to BioPay - Your Account is Verified!");
+            helper.setSubject("Welcome to GenePay - Your Account is Verified!");
             helper.setText(htmlContent, true);
 
             mailSender.send(mimeMessage);
@@ -93,6 +93,35 @@ public class EmailService {
         } catch (Exception e) {
             log.error("Failed to send welcome email to: {}", toEmail, e);
             // Don't throw exception for welcome email failures
+        }
+    }
+    @Async
+    public void sendPasswordResetEmail(String toEmail, String fullName, String resetCode) {
+        try {
+            log.info("Preparing to send password reset email to: {}", toEmail);
+
+            Context context = new Context();
+            context.setVariable("fullName", fullName);
+            context.setVariable("resetCode", resetCode);
+            context.setVariable("supportEmail", supportEmail);
+            context.setVariable("year", LocalDateTime.now().getYear());
+
+            String htmlContent = templateEngine.process("email/password-reset", context);
+
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setFrom(fromEmail, fromName);
+            helper.setTo(toEmail);
+            helper.setSubject("BioPay - Password Reset Request");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(mimeMessage);
+            log.info("Password reset email sent successfully to: {}", toEmail);
+
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", toEmail, e);
+            throw new RuntimeException("Failed to send password reset email", e);
         }
     }
 }
