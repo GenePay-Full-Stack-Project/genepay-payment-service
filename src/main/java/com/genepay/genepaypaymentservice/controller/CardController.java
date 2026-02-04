@@ -85,4 +85,54 @@ public class CardController {
         CardResponse response = cardService.updateCardNickname(userId, cardId, request.get("nickname"));
         return ResponseEntity.ok(ApiResponse.success("Card nickname updated", response));
     }
+
+    // ========== MERCHANT CARD ENDPOINTS ==========
+
+    @PostMapping("/merchant/{merchantId}")
+    @Operation(summary = "Add Merchant Card", description = "Link a new payment card to merchant account")
+    public ResponseEntity<ApiResponse<CardResponse>> addMerchantCard(
+            @Parameter(description = "Merchant ID") @PathVariable Long merchantId,
+            @Valid @RequestBody AddCardRequest request) {
+        log.info("Add card request for merchant: {}", merchantId);
+        CardResponse response = cardService.addMerchantCard(merchantId, request);
+        return ResponseEntity.ok(ApiResponse.success("Card added successfully", response));
+    }
+
+    @GetMapping("/merchant/{merchantId}")
+    @Operation(summary = "Get Merchant Cards", description = "Get all active cards for a merchant")
+    public ResponseEntity<ApiResponse<List<CardResponse>>> getMerchantCards(
+            @Parameter(description = "Merchant ID") @PathVariable Long merchantId) {
+        log.info("Get cards for merchant: {}", merchantId);
+        List<CardResponse> cards = cardService.getMerchantCards(merchantId);
+        return ResponseEntity.ok(ApiResponse.success(cards));
+    }
+
+    @GetMapping("/merchant/{merchantId}/default")
+    @Operation(summary = "Get Merchant Default Card", description = "Get the default payment card for a merchant")
+    public ResponseEntity<ApiResponse<CardResponse>> getMerchantDefaultCard(
+            @Parameter(description = "Merchant ID") @PathVariable Long merchantId) {
+        log.info("Get default card for merchant: {}", merchantId);
+        CardResponse card = cardService.getMerchantDefaultCard(merchantId);
+        return ResponseEntity.ok(ApiResponse.success(card));
+    }
+
+    @PutMapping("/merchant/{merchantId}/{cardId}/set-default")
+    @Operation(summary = "Set Merchant Default Card", description = "Set a specific card as the default for receiving payments")
+    public ResponseEntity<ApiResponse<CardResponse>> setMerchantDefaultCard(
+            @Parameter(description = "Merchant ID") @PathVariable Long merchantId,
+            @Parameter(description = "Card ID") @PathVariable Long cardId) {
+        log.info("Set default card {} for merchant: {}", cardId, merchantId);
+        CardResponse response = cardService.setMerchantDefaultCard(merchantId, cardId);
+        return ResponseEntity.ok(ApiResponse.success("Default card updated", response));
+    }
+
+    @DeleteMapping("/merchant/{merchantId}/{cardId}")
+    @Operation(summary = "Remove Merchant Card", description = "Remove a payment card from merchant account")
+    public ResponseEntity<ApiResponse<Void>> removeMerchantCard(
+            @Parameter(description = "Merchant ID") @PathVariable Long merchantId,
+            @Parameter(description = "Card ID") @PathVariable Long cardId) {
+        log.info("Remove card {} for merchant: {}", cardId, merchantId);
+        cardService.removeMerchantCard(merchantId, cardId);
+        return ResponseEntity.ok(ApiResponse.success("Card removed successfully", null));
+    }
 }
