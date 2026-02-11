@@ -2,6 +2,7 @@ package com.genepay.genepaypaymentservice.service;
 
 import com.genepay.genepaypaymentservice.dto.*;
 import com.genepay.genepaypaymentservice.exception.BadRequestException;
+import com.genepay.genepaypaymentservice.exception.ResourceNotFoundException;
 import com.genepay.genepaypaymentservice.exception.UnauthorizedException;
 import com.genepay.genepaypaymentservice.model.User;
 import com.genepay.genepaypaymentservice.repository.UserRepository;
@@ -195,6 +196,15 @@ public class UserService {
         return String.format("%06d", (int) (Math.random() * 1000000));
     }
 
+    public User findByFaceId(String faceId) {
+        return userRepository.findByFaceId(faceId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for face ID"));
+    }
 
+    public UserResponse getUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return modelMapper.map(user, UserResponse.class);
+    }
 
 }
