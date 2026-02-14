@@ -44,6 +44,19 @@ To enforce CI checks before merging, configure branch protection rules in your r
    - Require branches to be up to date before merging
 3. Repeat for `main` branch
 
+## Repository Secrets Configuration
+
+The CI workflows require GitHub repository secrets to be configured. See [SECRETS.md](SECRETS.md) for:
+- Complete list of required secrets
+- How to add secrets to your repository
+- Recommended test values for CI
+- Security best practices
+
+**Quick Setup:**
+1. Go to **Settings** → **Secrets and variables** → **Actions**
+2. Add all secrets listed in [SECRETS.md](SECRETS.md)
+3. Use test/dummy values for CI environment
+
 ## Local Testing
 
 Before pushing, you can run the same checks locally:

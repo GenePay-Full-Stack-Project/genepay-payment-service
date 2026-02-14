@@ -15,6 +15,21 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: genepay_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,6 +54,28 @@ jobs:
       
       - name: Run tests
         run: ./mvnw clean test
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/genepay_db
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
+          SPRING_JPA_HIBERNATE_DDL_AUTO: update
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: genepay_db
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          MAIL_HOST: ${{ secrets.MAIL_HOST }}
+          MAIL_PORT: ${{ secrets.MAIL_PORT }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_FROM_NAME: ${{ secrets.EMAIL_FROM_NAME }}
+          SUPPORT_EMAIL: ${{ secrets.SUPPORT_EMAIL }}
+          BIOPAY_PLATFORM_TOKEN: ${{ secrets.BIOPAY_PLATFORM_TOKEN }}
+          BLOCKCHAIN_ENABLED: ${{ secrets.BLOCKCHAIN_ENABLED }}
+          BLOCKCHAIN_RELAY_URL: ${{ secrets.BLOCKCHAIN_RELAY_URL }}
+          SERVER_PORT: 8080
+          SPRING_ENV: test
         
       - name: Generate test report
         if: always()

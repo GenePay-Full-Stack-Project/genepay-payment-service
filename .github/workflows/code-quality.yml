@@ -11,6 +11,21 @@ jobs:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: genepay_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,6 +42,23 @@ jobs:
       
       - name: Run Maven verify
         run: ./mvnw clean verify
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/genepay_db
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: genepay_db
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          MAIL_HOST: ${{ secrets.MAIL_HOST }}
+          MAIL_PORT: ${{ secrets.MAIL_PORT }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          BIOPAY_PLATFORM_TOKEN: ${{ secrets.BIOPAY_PLATFORM_TOKEN }}
+          BLOCKCHAIN_ENABLED: ${{ secrets.BLOCKCHAIN_ENABLED }}
+          BLOCKCHAIN_RELAY_URL: ${{ secrets.BLOCKCHAIN_RELAY_URL }}
       
       - name: Check code formatting
         run: ./mvnw spotless:check
