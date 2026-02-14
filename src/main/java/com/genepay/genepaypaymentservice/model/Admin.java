@@ -1,4 +1,4 @@
-package com.genepay.genepaypaymentservice.models;
+package com.genepay.genepaypaymentservice.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -8,16 +8,15 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "admins")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class Admin {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,46 +29,20 @@ public class User {
     private String password;
 
     @Column(nullable = false)
-    private String fullName;
-
-    @Column(unique = true, nullable = false)
-    private String nicNumber;
+    private String firstName;
 
     @Column(nullable = false)
-    private String phoneNumber;
-
-    @Column(unique = true)
-    private String faceId; // Reference to biometric service
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<Card> cards = new java.util.ArrayList<>();
-
-    @Column(precision = 10, scale = 2)
-    @Builder.Default
-    private BigDecimal balance = BigDecimal.ZERO;
+    private String lastName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private UserStatus status = UserStatus.ACTIVE;
+    private AdminRole role = AdminRole.ADMIN;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private Boolean emailVerified = false;
-
-    @Column
-    private String emailVerificationCode;
-
-    @Column
-    private LocalDateTime emailVerificationExpiry;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean faceEnrolled = false;
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean cardLinked = false;
+    private AdminStatus status = AdminStatus.ACTIVE;
 
     @Column
     private Integer failedLoginAttempts = 0;
@@ -88,7 +61,15 @@ public class User {
     @Column
     private LocalDateTime lastLoginAt;
 
-    public enum UserStatus {
-        ACTIVE, SUSPENDED, INACTIVE, DELETED
+    public enum AdminRole {
+        SUPER_ADMIN,
+        ADMIN,
+        SUPPORT
+    }
+
+    public enum AdminStatus {
+        ACTIVE,
+        SUSPENDED,
+        INACTIVE
     }
 }

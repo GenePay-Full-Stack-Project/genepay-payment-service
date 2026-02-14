@@ -1,4 +1,4 @@
-package com.genepay.genepaypaymentservice.models;
+package com.genepay.genepaypaymentservice.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,12 +12,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "merchants")
+@Table(name = "users")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Merchant {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,27 +30,42 @@ public class Merchant {
     private String password;
 
     @Column(nullable = false)
-    private String businessName;
+    private String fullName;
 
-    @Column
-    private String ownerName;
+    @Column(unique = true, nullable = false)
+    private String nicNumber;
 
-    @Column(unique = true)
+    @Column(nullable = false)
     private String phoneNumber;
 
-    @Column
-    private String businessAddress;
+    @Column(unique = true)
+    private String faceId; // Reference to biometric service
 
-    @Column
-    private String businessType;
-
-    @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<Card> cards = new java.util.ArrayList<>();
+
+    @Column(precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal balance = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private MerchantStatus status = MerchantStatus.PENDING;
+    private UserStatus status = UserStatus.ACTIVE;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean emailVerified = false;
+
+    @Column
+    private String emailVerificationCode;
+
+    @Column
+    private LocalDateTime emailVerificationExpiry;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean faceEnrolled = false;
 
     @Column(nullable = false)
     @Builder.Default
@@ -73,7 +88,7 @@ public class Merchant {
     @Column
     private LocalDateTime lastLoginAt;
 
-    public enum MerchantStatus {
-        PENDING, ACTIVE, SUSPENDED, INACTIVE, DELETED
+    public enum UserStatus {
+        ACTIVE, SUSPENDED, INACTIVE, DELETED
     }
 }
