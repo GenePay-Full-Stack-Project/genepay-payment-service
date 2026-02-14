@@ -14,7 +14,7 @@ This directory contains GitHub Actions workflows for the GenePay Payment Service
 
 #### Test Job
 - Checks out the code
-- Sets up JDK 17 with Maven caching
+- Sets up JDK 21 with Maven caching
 - Runs `./mvnw clean test`
 - Generates test reports
 - Uploads test results as artifacts (retained for 30 days)
@@ -61,7 +61,7 @@ Before pushing, you can run the same checks locally:
 
 ## Requirements
 
-- Java 17
+- Java 21
 - Maven 3.6+
 - All dependencies defined in `pom.xml`
 
