@@ -53,7 +53,7 @@ jobs:
         run: chmod +x mvnw
       
       - name: Run tests
-        run: ./mvnw clean test
+        run: ./mvnw clean test -Dsurefire.useFile=false
         env:
           SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/genepay_db
@@ -76,6 +76,77 @@ jobs:
           BLOCKCHAIN_ENABLED: false
           BLOCKCHAIN_RELAY_URL: http://localhost:3001
           SERVER_PORT: 0
+      
+      - name: Display test results summary
+        if: always()
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -d "target/surefire-reports" ]; then
+            TOTAL=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h "tests=" {} \; | sed 's/.*tests="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
+            FAILURES=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h "failures=" {} \; | sed 's/.*failures="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
+            ERRORS=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h "errors=" {} \; | sed 's/.*errors="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
+            SKIPPED=$(find target/surefire-reports -name "TEST-*.xml" -exec grep -h "skipped=" {} \; | sed 's/.*skipped="\([0-9]*\)".*/\1/' | awk '{s+=$1} END {print s}')
+            PASSED=$((TOTAL - FAILURES - ERRORS - SKIPPED))
+            
+            echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ Failed | $FAILURES |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⚠️ Errors | $ERRORS |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⏭️ Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+            echo "| 📊 **Total** | **$TOTAL** |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "### Detailed Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            find target/surefire-reports -name "TEST-*.xml" | sort | while read file; do
+              CLASS_NAME=$(grep -o 'name="[^"]*"' "$file" | head -1 | sed 's/name="\(.*\)"/\1/' | sed 's/.*\.//')
+              TESTS=$(grep -o 'tests="[^"]*"' "$file" | head -1 | sed 's/tests="\(.*\)"/\1/')
+              FAILS=$(grep -o 'failures="[^"]*"' "$file" | head -1 | sed 's/failures="\(.*\)"/\1/')
+              ERRS=$(grep -o 'errors="[^"]*"' "$file" | head -1 | sed 's/errors="\(.*\)"/\1/')
+              SKIP=$(grep -o 'skipped="[^"]*"' "$file" | head -1 | sed 's/skipped="\(.*\)"/\1/')
+              TIME=$(grep -o 'time="[^"]*"' "$file" | head -1 | sed 's/time="\(.*\)"/\1/')
+              
+              CLASS_STATUS="✅"
+              [ "$FAILS" != "0" ] && CLASS_STATUS="❌"
+              [ "$ERRS" != "0" ] && CLASS_STATUS="⚠️"
+              
+              echo "<details>" >> $GITHUB_STEP_SUMMARY
+              echo "<summary>$CLASS_STATUS <b>$CLASS_NAME</b> — $TESTS tests, $FAILS failures, $ERRS errors, $SKIP skipped (${TIME}s)</summary>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "| Status | Test Method | Time |" >> $GITHUB_STEP_SUMMARY
+              echo "|--------|-------------|------|" >> $GITHUB_STEP_SUMMARY
+              
+              grep '<testcase' "$file" | while read line; do
+                TEST_NAME=$(echo "$line" | sed 's/.*name="\([^"]*\)".*/\1/')
+                TEST_TIME=$(echo "$line" | sed 's/.*time="\([^"]*\)".*/\1/')
+                
+                if echo "$line" | grep -q '/>'; then
+                  echo "| ✅ | $TEST_NAME | ${TEST_TIME}s |" >> $GITHUB_STEP_SUMMARY
+                else
+                  NEXT_LINES=$(grep -A 2 "name=\"$TEST_NAME\"" "$file")
+                  if echo "$NEXT_LINES" | grep -q '<failure'; then
+                    echo "| ❌ | $TEST_NAME | ${TEST_TIME}s |" >> $GITHUB_STEP_SUMMARY
+                  elif echo "$NEXT_LINES" | grep -q '<error'; then
+                    echo "| ⚠️ | $TEST_NAME | ${TEST_TIME}s |" >> $GITHUB_STEP_SUMMARY
+                  elif echo "$NEXT_LINES" | grep -q '<skipped'; then
+                    echo "| ⏭️ | $TEST_NAME | ${TEST_TIME}s |" >> $GITHUB_STEP_SUMMARY
+                  else
+                    echo "| ✅ | $TEST_NAME | ${TEST_TIME}s |" >> $GITHUB_STEP_SUMMARY
+                  fi
+                fi
+              done
+              
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "</details>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            done
+          else
+            echo "❌ No test reports found" >> $GITHUB_STEP_SUMMARY
+          fi
       
       - name: Upload test results
         if: always()
