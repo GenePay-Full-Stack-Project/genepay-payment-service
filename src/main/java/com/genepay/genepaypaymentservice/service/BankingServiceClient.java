@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -24,6 +25,46 @@ public class BankingServiceClient {
 
     @Value("${app.banking-service.platform-payment-token:}")
     private String platformPaymentToken;
+
+    /**
+     * Verify card details and get payment token
+     * @param cardNumber 16-digit card number
+     * @param cvv Card CVV
+     * @param expiry Card expiry (MM/YY)
+     * @return Payment token if valid, null otherwise
+     */
+    public String verifyCardAndGetToken(String cardNumber, String cvv, String expiry) {
+        try {
+            WebClient webClient = webClientBuilder.baseUrl(bankingServiceUrl).build();
+
+            Map<String, String> request = Map.of(
+                    "cardNumber", cardNumber,
+                    "cvv", cvv,
+                    "expiry", expiry
+            );
+
+            Map<String, Object> response = webClient.post()
+                    .uri("/api/external/verify-card")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(java.time.Duration.ofMillis(timeout))
+                    .block();
+
+            if (response != null && response.containsKey("paymentToken")) {
+                String token = (String) response.get("paymentToken");
+                String last4 = cardNumber.substring(cardNumber.length() - 4);
+                log.info("Card verified successfully. Last 4 digits: {}", last4);
+                return token;
+            }
+
+            log.warn("Card verification failed: No token returned");
+            return null;
+        } catch (Exception e) {
+            log.error("Failed to verify card with banking service: {}", e.getMessage());
+            return null;
+        }
+    }
 
     /**
      * Transfer money from sender to receiver using payment tokens
@@ -63,6 +104,18 @@ public class BankingServiceClient {
             log.error("Failed to transfer money via banking service: {}", e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Get card last 4 digits from card number
+     * @param cardNumber Full card number
+     * @return Last 4 digits
+     */
+    public String getCardLast4(String cardNumber) {
+        if (cardNumber != null && cardNumber.length() >= 4) {
+            return cardNumber.substring(cardNumber.length() - 4);
+        }
+        return "****";
     }
 
     /**
