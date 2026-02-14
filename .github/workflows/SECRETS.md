@@ -33,8 +33,9 @@ This document lists all the secrets that need to be configured in your GitHub re
 
 | Secret Name | Description | Example Value |
 |------------|-------------|---------------|
-| `BLOCKCHAIN_ENABLED` | Enable/disable blockchain integration | `false` (for CI) or `true` |
 | `BLOCKCHAIN_RELAY_URL` | Blockchain relay service URL | `http://localhost:3001` |
+
+> **Note:** `BLOCKCHAIN_ENABLED` is set to `false` directly in the CI workflows to avoid requiring external blockchain services during tests.
 
 ## Database Configuration
 
@@ -58,9 +59,10 @@ EMAIL_FROM: noreply@genepay.com
 EMAIL_FROM_NAME: GenePay
 SUPPORT_EMAIL: support@genepay.com
 BIOPAY_PLATFORM_TOKEN: test-token-for-ci
-BLOCKCHAIN_ENABLED: false
 BLOCKCHAIN_RELAY_URL: http://localhost:3001
 ```
+
+> **Note:** Blockchain integration is disabled in CI (set directly in workflow), and mail authentication is disabled in the test profile to avoid connection issues.
 
 ## Security Best Practices
 

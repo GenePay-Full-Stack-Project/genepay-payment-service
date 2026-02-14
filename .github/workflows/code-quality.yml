@@ -43,6 +43,7 @@ jobs:
       - name: Run Maven verify
         run: ./mvnw clean verify
         env:
+          SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/genepay_db
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
@@ -57,8 +58,8 @@ jobs:
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           BIOPAY_PLATFORM_TOKEN: ${{ secrets.BIOPAY_PLATFORM_TOKEN }}
-          BLOCKCHAIN_ENABLED: ${{ secrets.BLOCKCHAIN_ENABLED }}
-          BLOCKCHAIN_RELAY_URL: ${{ secrets.BLOCKCHAIN_RELAY_URL }}
+          BLOCKCHAIN_ENABLED: false
+          BLOCKCHAIN_RELAY_URL: http://localhost:3001
       
       - name: Check code formatting
         run: ./mvnw spotless:check

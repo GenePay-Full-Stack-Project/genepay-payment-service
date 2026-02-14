@@ -55,6 +55,7 @@ jobs:
       - name: Run tests
         run: ./mvnw clean test
         env:
+          SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/genepay_db
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
@@ -72,10 +73,9 @@ jobs:
           EMAIL_FROM_NAME: ${{ secrets.EMAIL_FROM_NAME }}
           SUPPORT_EMAIL: ${{ secrets.SUPPORT_EMAIL }}
           BIOPAY_PLATFORM_TOKEN: ${{ secrets.BIOPAY_PLATFORM_TOKEN }}
-          BLOCKCHAIN_ENABLED: ${{ secrets.BLOCKCHAIN_ENABLED }}
-          BLOCKCHAIN_RELAY_URL: ${{ secrets.BLOCKCHAIN_RELAY_URL }}
-          SERVER_PORT: 8080
-          SPRING_ENV: test
+          BLOCKCHAIN_ENABLED: false
+          BLOCKCHAIN_RELAY_URL: http://localhost:3001
+          SERVER_PORT: 0
         
       - name: Generate test report
         if: always()
