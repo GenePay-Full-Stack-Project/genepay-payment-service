@@ -7,13 +7,23 @@
 
 Write-Host "Running tests before commit..." -ForegroundColor Yellow
 
-& .\mvnw.cmd test
+# Get the repository root directory (2 levels up from .github/workflows)
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
+Push-Location $repoRoot
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Tests failed! Commit aborted." -ForegroundColor Red
-    Write-Host "Fix the failing tests before committing." -ForegroundColor Red
-    exit 1
+try {
+    & .\mvnw.cmd test
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "❌ Tests failed! Commit aborted." -ForegroundColor Red
+        Write-Host "Fix the failing tests before committing." -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "✅ All tests passed! Proceeding with commit." -ForegroundColor Green
+    exit 0
 }
-
-Write-Host "✅ All tests passed! Proceeding with commit." -ForegroundColor Green
-exit 0
+finally {
+    Pop-Location
+}

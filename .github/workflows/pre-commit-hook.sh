@@ -5,6 +5,10 @@
 #   chmod +x .git/hooks/pre-commit
 
 echo "Running tests before commit..."
+
+# Get the repository root directory
+cd "$(git rev-parse --show-toplevel)"
+
 ./mvnw test
 
 if [ $? -ne 0 ]; then
