@@ -3,197 +3,291 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to FaceWallet</title>
+    <title>Welcome to GenePay</title>
 
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             margin: 0;
             padding: 0;
-            font-family: 'Inter', Arial, sans-serif;
-            background-color: #f5f6fa;
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #f5f5f5;
+            -webkit-font-smoothing: antialiased;
         }
-        .email-container {
+        .email-wrapper {
             max-width: 600px;
             margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .email-container {
             background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border-radius: 2px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
         }
 
         .header {
             background-color: #0a005a;
-            padding: 40px 20px;
+            padding: 40px 32px;
             text-align: center;
-            border-radius: 10px 10px 0 0;
         }
         .logo {
-            font-size: 32px;
-            font-weight: 700;
+            font-size: 24px;
+            font-weight: 500;
             color: #ffffff;
             margin: 0;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.01em;
         }
         .tagline {
-            color: #ddddff;
-            font-size: 14px;
-            margin-top: 8px;
-            font-weight: 300;
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            margin-top: 6px;
+            font-weight: 400;
         }
 
         .content {
-            padding: 40px 30px;
+            padding: 40px 32px;
         }
         .greeting {
-            font-size: 22px;
-            color: #0a005a;
-            margin-bottom: 18px;
-            font-weight: 700;
+            font-size: 18px;
+            color: #000000;
+            margin-bottom: 8px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
         }
         .message {
-            font-size: 15px;
-            color: #444;
+            font-size: 14px;
+            color: #666666;
             line-height: 1.7;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .success-badge {
             text-align: center;
-            padding: 25px;
-            margin: 20px 0;
+            padding: 40px 0;
+            margin: 32px 0;
+            border-bottom: 1px solid #e0e0e0;
         }
         .checkmark {
-            width: 80px;
-            height: 80px;
+            width: 72px;
+            height: 72px;
             background-color: #0a005a;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 48px;
+            font-size: 40px;
             color: white;
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
         .success-title {
-            font-size: 22px;
+            font-size: 17px;
             margin: 0;
-            color: #0a005a;
-            font-weight: 700;
+            color: #000000;
+            font-weight: 600;
+            letter-spacing: -0.01em;
         }
 
+        .feature-section {
+            margin: 40px 0;
+        }
         .feature-box {
-            background-color: #f9f9ff;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
+            background-color: #f9f9f9;
+            padding: 28px 24px;
+            margin: 20px 0;
             border-left: 4px solid #0a005a;
         }
         .feature-box h3 {
-            color: #0a005a;
+            color: #000000;
             margin: 0 0 10px 0;
-            font-size: 17px;
+            font-size: 14px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .feature-box p {
             margin: 0;
-            color: #555;
+            color: #666666;
             font-size: 14px;
+            line-height: 1.6;
+        }
+        .feature-list {
+            margin-top: 8px;
+            padding-left: 0;
+            list-style: none;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            color: #666666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .feature-list li::before {
+            content: '•';
+            color: #0a005a;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        .cta-section {
+            background-color: #0a005a;
+            padding: 32px 28px;
+            text-align: center;
+            margin: 40px 0;
+            color: white;
+        }
+        .cta-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            letter-spacing: -0.01em;
+        }
+        .cta-text {
+            font-size: 14px;
+            color: rgba(255,255,255,0.85);
             line-height: 1.6;
         }
 
         .footer {
             background-color: #fafafa;
-            padding: 30px;
+            padding: 32px;
             text-align: center;
             border-top: 1px solid #e0e0e0;
-            border-radius: 0 0 10px 10px;
+        }
+        .footer-links {
+            margin-bottom: 16px;
+        }
+        .footer-links a {
+            color: #0a005a;
+            text-decoration: none;
+            margin: 0 16px;
+            font-size: 13px;
+            font-weight: 500;
         }
         .footer-text {
-            font-size: 13px;
-            color: #888;
-            margin: 5px 0;
+            font-size: 12px;
+            color: #999999;
+            margin: 8px 0;
         }
-        .footer a {
+        .footer-text a {
             color: #0a005a;
             text-decoration: none;
         }
+        .footer-muted {
+            font-size: 11px;
+            color: #bbbbbb;
+            margin-top: 12px;
+        }
 
         @media only screen and (max-width: 600px) {
-            .content { padding: 30px 20px; }
+            .email-wrapper { padding: 20px 10px; }
+            .content { padding: 32px 20px; }
+            .header { padding: 32px 20px; }
+            .feature-box { padding: 20px; }
+            .footer { padding: 24px 20px; }
+            .footer-links a { margin: 0 8px; }
         }
     </style>
 </head>
 
 <body>
-    <div class="email-container">
+    <div class="email-wrapper">
+        <div class="email-container">
 
-        <!-- Header -->
-        <div class="header">
-            <h1 class="logo">🔐 FaceWallet</h1>
-            <p class="tagline">Secure Face-Based Payments</p>
-        </div>
-
-        <!-- Content -->
-        <div class="content">
-
-            <!-- Success Badge -->
-            <div class="success-badge">
-                <div class="checkmark">✓</div>
-                <h2 class="success-title">Email Verified Successfully!</h2>
+            <!-- Header -->
+            <div class="header">
+                <h1 class="logo">GenePay</h1>
+                <p class="tagline">Biometric Payment Platform</p>
             </div>
 
-            <h2 class="greeting">Welcome aboard, <span th:text="${fullName}">User</span>! 🎉</h2>
+            <!-- Content -->
+            <div class="content">
 
-            <p class="message">
-                Your FaceWallet account is now fully activated. You're ready to experience fast and secure 
-                face-based payments.
-            </p>
+                <!-- Success Badge -->
+                <div class="success-badge">
+                    <div class="checkmark">✓</div>
+                    <h2 class="success-title">Account Activated Successfully</h2>
+                </div>
 
-            <!-- Features -->
-            <div class="feature-box">
-                <h3>🔗 Next Steps</h3>
-                <p>
-                    1. Link your payment card<br>
-                    2. Set up face authentication<br>
-                    3. Start making secure instant payments
+                <h2 class="greeting">Welcome, <span th:text="${fullName}">User</span></h2>
+
+                <p class="message">
+                    Your GenePay account is now fully activated. You're all set to revolutionize the way you make payments with secure, instant biometric authentication.
+                </p>
+
+                <!-- Features -->
+                <div class="feature-section">
+                    <div class="feature-box">
+                        <h3>Get Started</h3>
+                        <p>Begin your journey in three simple steps:</p>
+                        <ul class="feature-list">
+                            <li>Connect your payment cards</li>
+                            <li>Complete facial recognition setup</li>
+                            <li>Start making instant payments</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-box">
+                        <h3>Enterprise-Grade Security</h3>
+                        <p>
+                            Your data is protected with military-grade encryption, advanced biometric authentication, and real-time fraud detection systems.
+                        </p>
+                    </div>
+
+                    <div class="feature-box">
+                        <h3>Smart Features</h3>
+                        <p>
+                            Enjoy instant payments, detailed transaction analytics, personalized insights, and seamless merchant integration.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="cta-section">
+                    <div class="cta-title">Ready to get started?</div>
+                    <div class="cta-text">
+                        Open the GenePay app and complete your profile setup.
+                    </div>
+                </div>
+
+                <p class="message" style="text-align: center; color: #999999;">
+                    Thank you for choosing GenePay.
                 </p>
             </div>
 
-            <div class="feature-box">
-                <h3>🛡️ Your Security Matters</h3>
-                <p>
-                    FaceWallet uses advanced biometric verification and encryption to protect your identity 
-                    and payments.
+            <!-- Footer -->
+            <div class="footer">
+                <div class="footer-links">
+                    <a href="#">Help Center</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </div>
+
+                <p class="footer-text">
+                    Questions? Contact us at 
+                    <a href="#" th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">
+                        support@genepay.com
+                    </a>
+                </p>
+
+                <p class="footer-text">
+                    © <span th:text="${year}">2025</span> GenePay. All rights reserved.
+                </p>
+
+                <p class="footer-muted">
+                    This email was sent to you because you created a GenePay account.
                 </p>
             </div>
 
-            <div class="feature-box">
-                <h3>📞 Need Help?</h3>
-                <p>
-                    Our support team is available 24/7 to assist with anything you need.
-                </p>
-            </div>
-
-            <p class="message">
-                Thank you for choosing FaceWallet — the future of payments starts now.
-            </p>
         </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <p class="footer-text">
-                Need help? Contact us at 
-                <a href="#" th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">
-                    support@facewallet.com
-                </a>
-            </p>
-
-            <p class="footer-text">
-                © <span th:text="${year}">2025</span> FaceWallet. All rights reserved.
-            </p>
-        </div>
-
     </div>
 </body>
 </html>
