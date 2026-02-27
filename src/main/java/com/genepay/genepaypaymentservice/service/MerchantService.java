@@ -27,6 +27,7 @@ public class MerchantService {
     private final JwtUtil jwtUtil;
     private final ModelMapper modelMapper;
     private final EmailService emailService;
+    private final GoogleAuthService googleAuthService;
 
     private final java.util.Map<String, String> tempVerificationCodes = new ConcurrentHashMap<>();
     private final java.util.Map<String, LocalDateTime> tempExpiry = new ConcurrentHashMap<>();
@@ -366,5 +367,98 @@ public class MerchantService {
             log.error("Merchant token refresh failed: {}", e.getMessage());
             throw new UnauthorizedException("Invalid or expired refresh token");
         }
+    }
+
+    /**
+     * Sign in or register merchant with Google
+     * @param request GoogleSignInRequest containing Google ID token
+     * @return LoginResponse with JWT tokens
+     */
+    @Transactional
+    public LoginResponse googleSignIn(GoogleSignInRequest request) {
+        log.info("Google sign-in request received for merchant");
+
+        // Verify Google token and get user info
+        GoogleUserInfo googleUserInfo = googleAuthService.verifyGoogleToken(request.getIdToken());
+
+        if (!googleUserInfo.getEmailVerified()) {
+            throw new BadRequestException("Google email not verified");
+        }
+
+        // Check if merchant exists by googleId
+        Merchant merchant = merchantRepository.findByGoogleId(googleUserInfo.getGoogleId())
+                .orElse(null);
+
+        // If not found by googleId, check by email
+        if (merchant == null) {
+            merchant = merchantRepository.findByEmail(googleUserInfo.getEmail())
+                    .orElse(null);
+
+            if (merchant != null) {
+                // Merchant exists with this email but not linked to Google yet
+                // Link the Google account
+                merchant.setGoogleId(googleUserInfo.getGoogleId());
+                merchant = merchantRepository.save(merchant);
+                log.info("Linked existing merchant account to Google: {}", merchant.getEmail());
+            }
+        }
+
+        // If merchant still doesn't exist, create new merchant
+        if (merchant == null) {
+            log.info("Creating new merchant from Google sign-in: {}", googleUserInfo.getEmail());
+            
+            merchant = Merchant.builder()
+                    .email(googleUserInfo.getEmail())
+                    .businessName(googleUserInfo.getName())
+                    .ownerName(googleUserInfo.getName())
+                    .googleId(googleUserInfo.getGoogleId())
+                    .status(Merchant.MerchantStatus.PENDING)
+                    .build();
+
+            merchant = merchantRepository.save(merchant);
+            log.info("New merchant created from Google sign-in: {}", merchant.getId());
+
+            // Send welcome email
+            try {
+                emailService.sendWelcomeEmail(merchant.getEmail(), merchant.getBusinessName());
+                log.info("Welcome email sent to: {}", merchant.getEmail());
+            } catch (Exception e) {
+                log.error("Failed to send welcome email to: {}", merchant.getEmail(), e);
+                // Don't fail if email fails
+            }
+        } else {
+            // Update last login time
+            merchant.setLastLoginAt(LocalDateTime.now());
+            merchant.setFailedLoginAttempts(0);
+            merchant.setLockedUntil(null);
+            merchantRepository.save(merchant);
+        }
+
+        // Check merchant status
+        if (merchant.getStatus() != Merchant.MerchantStatus.ACTIVE &&
+                merchant.getStatus() != Merchant.MerchantStatus.PENDING) {
+            throw new UnauthorizedException("Account is not active");
+        }
+
+        // Generate tokens
+        String token = jwtUtil.generateToken(merchant.getEmail(), "MERCHANT", merchant.getId());
+        String refreshToken = jwtUtil.generateRefreshToken(merchant.getEmail(), "MERCHANT", merchant.getId());
+
+        log.info("Google sign-in successful for merchant: {}", merchant.getId());
+
+        UserResponse merchantAsUser = UserResponse.builder()
+                .id(merchant.getId())
+                .email(merchant.getEmail())
+                .fullName(merchant.getBusinessName() +
+                        (merchant.getOwnerName() != null ? " - " + merchant.getOwnerName() : ""))
+                .build();
+
+        return LoginResponse.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(86400000L)
+                .user(merchantAsUser)
+                .build();
     }
 }

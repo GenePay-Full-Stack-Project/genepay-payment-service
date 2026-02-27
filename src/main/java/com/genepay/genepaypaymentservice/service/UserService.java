@@ -30,6 +30,7 @@ public class UserService {
     private final JwtUtil jwtUtil;
     private final ModelMapper modelMapper;
     private final EmailService emailService;
+    private final GoogleAuthService googleAuthService;
 
 
     private final java.util.Map<String, String> tempVerificationCodes = new ConcurrentHashMap<>();
@@ -205,6 +206,92 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return modelMapper.map(user, UserResponse.class);
+    }
+
+    /**
+     * Sign in or register user with Google
+     * @param request GoogleSignInRequest containing Google ID token
+     * @return LoginResponse with JWT tokens
+     */
+    @Transactional
+    public LoginResponse googleSignIn(GoogleSignInRequest request) {
+        log.info("Google sign-in request received");
+
+        // Verify Google token and get user info
+        GoogleUserInfo googleUserInfo = googleAuthService.verifyGoogleToken(request.getIdToken());
+
+        if (!googleUserInfo.getEmailVerified()) {
+            throw new BadRequestException("Google email not verified");
+        }
+
+        // Check if user exists by googleId
+        User user = userRepository.findByGoogleId(googleUserInfo.getGoogleId())
+                .orElse(null);
+
+        // If not found by googleId, check by email
+        if (user == null) {
+            user = userRepository.findByEmail(googleUserInfo.getEmail())
+                    .orElse(null);
+
+            if (user != null) {
+                // User exists with this email but not linked to Google yet
+                // Link the Google account
+                user.setGoogleId(googleUserInfo.getGoogleId());
+                user.setEmailVerified(true);
+                user = userRepository.save(user);
+                log.info("Linked existing user account to Google: {}", user.getEmail());
+            }
+        }
+
+        // If user still doesn't exist, create new user
+        if (user == null) {
+            log.info("Creating new user from Google sign-in: {}", googleUserInfo.getEmail());
+            
+            user = User.builder()
+                    .email(googleUserInfo.getEmail())
+                    .fullName(googleUserInfo.getName())
+                    .googleId(googleUserInfo.getGoogleId())
+                    .emailVerified(true)
+                    .status(User.UserStatus.ACTIVE)
+                    .build();
+
+            user = userRepository.save(user);
+            log.info("New user created from Google sign-in: {}", user.getId());
+
+            // Send welcome email
+            try {
+                emailService.sendWelcomeEmail(user.getEmail(), user.getFullName());
+                log.info("Welcome email sent to: {}", user.getEmail());
+            } catch (Exception e) {
+                log.error("Failed to send welcome email to: {}", user.getEmail(), e);
+                // Don't fail if email fails
+            }
+        } else {
+            // Update last login time
+            user.setLastLoginAt(LocalDateTime.now());
+            user.setFailedLoginAttempts(0);
+            user.setLockedUntil(null);
+            userRepository.save(user);
+        }
+
+        // Check user status
+        if (user.getStatus() != User.UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Account is not active");
+        }
+
+        // Generate tokens
+        String token = jwtUtil.generateToken(user.getEmail(), "USER", user.getId());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail(), "USER", user.getId());
+
+        log.info("Google sign-in successful for user: {}", user.getId());
+
+        return LoginResponse.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(86400000L) // 24 hours
+                .user(modelMapper.map(user, UserResponse.class))
+                .build();
     }
 
 }

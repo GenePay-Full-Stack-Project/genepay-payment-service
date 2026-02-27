@@ -26,11 +26,14 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column
     private String password;
 
     @Column(nullable = false)
     private String fullName;
+
+    @Column(unique = true)
+    private String googleId;
 
     @Column(unique = true, nullable = false)
     private String nicNumber;

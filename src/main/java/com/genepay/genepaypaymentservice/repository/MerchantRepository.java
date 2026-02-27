@@ -13,6 +13,8 @@ public interface MerchantRepository extends JpaRepository<Merchant, Long> {
 
     Optional<Merchant> findByPhoneNumber(String phoneNumber);
 
+    Optional<Merchant> findByGoogleId(String googleId);
+
     boolean existsByEmail(String email);
 
     boolean existsByPhoneNumber(String phoneNumber);

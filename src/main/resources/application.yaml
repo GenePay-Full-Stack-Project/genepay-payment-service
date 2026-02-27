@@ -139,6 +139,11 @@ app:
     from-name: ${EMAIL_FROM_NAME:BioPay}
     verification-code-expiry-hours: 24
     support-email: ${SUPPORT_EMAIL:support@biopay.com}
+  
+  # Google OAuth2 Configuration
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:your-google-client-id}
+    client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
 
 # Springdoc OpenAPI Configuration
 springdoc:

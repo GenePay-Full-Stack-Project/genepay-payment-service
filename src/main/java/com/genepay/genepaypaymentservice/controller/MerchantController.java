@@ -129,4 +129,17 @@ public class MerchantController {
         RefreshTokenResponse response = merchantService.refreshToken(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", response));
     }
+
+    @PostMapping("/google-signin")
+    @Operation(summary = "Google Sign-In", description = "Authenticate or register merchant using Google ID token")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Sign-in successful"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid Google token or email not verified")
+    })
+    public ResponseEntity<ApiResponse<LoginResponse>> googleSignIn(
+            @Valid @RequestBody GoogleSignInRequest request) {
+        log.info("Google sign-in request received for merchant");
+        LoginResponse response = merchantService.googleSignIn(request);
+        return ResponseEntity.ok(ApiResponse.success("Sign-in successful", response));
+    }
 }

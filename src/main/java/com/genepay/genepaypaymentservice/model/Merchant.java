@@ -26,11 +26,14 @@ public class Merchant {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @Column
     private String password;
 
     @Column(nullable = false)
     private String businessName;
+
+    @Column(unique = true)
+    private String googleId;
 
     @Column
     private String ownerName;

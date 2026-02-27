@@ -75,4 +75,17 @@ public class UserController {
         return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Email verified successfully", null));
     }
     
+    @PostMapping("/google-signin")
+    @Operation(summary = "Google Sign-In", description = "Authenticate or register user using Google ID token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Sign-in successful"),
+            @ApiResponse(responseCode = "400", description = "Invalid Google token or email not verified")
+    })
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<LoginResponse>> googleSignIn(
+            @Valid @RequestBody GoogleSignInRequest request) {
+        log.info("Google sign-in request received");
+        LoginResponse response = userService.googleSignIn(request);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Sign-in successful", response));
+    }
+    
 }
