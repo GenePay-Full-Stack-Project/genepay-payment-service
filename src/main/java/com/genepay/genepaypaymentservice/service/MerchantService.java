@@ -5,7 +5,9 @@ import com.genepay.genepaypaymentservice.exception.BadRequestException;
 import com.genepay.genepaypaymentservice.exception.ResourceNotFoundException;
 import com.genepay.genepaypaymentservice.exception.UnauthorizedException;
 import com.genepay.genepaypaymentservice.model.Merchant;
+import com.genepay.genepaypaymentservice.model.VerificationCode;
 import com.genepay.genepaypaymentservice.repository.MerchantRepository;
+import com.genepay.genepaypaymentservice.repository.VerificationCodeRepository;
 import com.genepay.genepaypaymentservice.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -28,13 +30,9 @@ public class MerchantService {
     private final ModelMapper modelMapper;
     private final EmailService emailService;
     private final GoogleAuthService googleAuthService;
+    private final VerificationCodeRepository verificationCodeRepository;
 
-    private final java.util.Map<String, String> tempVerificationCodes = new ConcurrentHashMap<>();
-    private final java.util.Map<String, LocalDateTime> tempExpiry = new ConcurrentHashMap<>();
-    private final java.util.Map<String, LocalDateTime> verifiedEmails = new ConcurrentHashMap<>();
-    // Rate limiting for verification code sending
-    private final java.util.Map<String, LocalDateTime> lastCodeSentTime = new ConcurrentHashMap<>();
-
+    @Transactional
     public void sendVerificationCode(String email) {
         log.info("Sending verification code to merchant: {}", email);
 
@@ -45,23 +43,37 @@ public class MerchantService {
             throw new BadRequestException("Email already registered");
         }
 
-        // Rate limiting: Allow sending code only once per minute
-        LocalDateTime lastSent = lastCodeSentTime.get(normalizedEmail);
-        if (lastSent != null && lastSent.isAfter(LocalDateTime.now().minusMinutes(1))) {
+        // Rate limiting: Check if code was sent recently
+        Optional<VerificationCode> existingCode = verificationCodeRepository
+                .findByEmailAndType(normalizedEmail, VerificationCode.VerificationType.MERCHANT);
+        
+        if (existingCode.isPresent() && existingCode.get().getLastCodeSentTime() != null 
+                && existingCode.get().getLastCodeSentTime().isAfter(LocalDateTime.now().minusMinutes(1))) {
             throw new BadRequestException("Please wait before requesting another verification code");
         }
 
-        String verificationCode = generateVerificationCode();
-        log.info("Verification code: {}", verificationCode);
+        String code = generateVerificationCode();
+        log.info("Verification code: {}", code);
         LocalDateTime expiryTime = LocalDateTime.now().plusHours(24);
 
-        tempVerificationCodes.put(normalizedEmail, verificationCode);
-        tempExpiry.put(normalizedEmail, expiryTime);
-        lastCodeSentTime.put(normalizedEmail, LocalDateTime.now());
+        // Delete any existing verification code for this email
+        verificationCodeRepository.deleteByEmailAndType(normalizedEmail, VerificationCode.VerificationType.MERCHANT);
+
+        // Create new verification code
+        VerificationCode verificationCode = VerificationCode.builder()
+                .email(normalizedEmail)
+                .code(code)
+                .type(VerificationCode.VerificationType.MERCHANT)
+                .expiryTime(expiryTime)
+                .verified(false)
+                .lastCodeSentTime(LocalDateTime.now())
+                .build();
+        
+        verificationCodeRepository.save(verificationCode);
 
         // Send verification email
         try {
-            emailService.sendVerificationEmail(email, "Merchant", verificationCode);
+            emailService.sendVerificationEmail(email, "Merchant", code);
             log.info("Verification email sent to: {}", email);
         } catch (Exception e) {
             log.error("Failed to send verification email to: {}", email, e);
@@ -75,20 +87,24 @@ public class MerchantService {
 
         String normalizedEmail = request.getEmail().toLowerCase();
 
-        String storedCode = tempVerificationCodes.get(normalizedEmail);
-        LocalDateTime expiry = tempExpiry.get(normalizedEmail);
+        VerificationCode verificationCode = verificationCodeRepository
+                .findByEmailAndType(normalizedEmail, VerificationCode.VerificationType.MERCHANT)
+                .orElseThrow(() -> new BadRequestException("No verification code found for this email"));
 
-        if (storedCode == null || !storedCode.equals(request.getVerificationCode()) ||
-                expiry == null || expiry.isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Invalid or expired verification code");
+        if (!verificationCode.getCode().equals(request.getVerificationCode())) {
+            throw new BadRequestException("Invalid verification code");
+        }
+
+        if (verificationCode.getExpiryTime().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Verification code expired");
         }
 
         // Mark email as verified
-        verifiedEmails.put(normalizedEmail, LocalDateTime.now().plusHours(24));
-
-        // Remove temp code
-        tempVerificationCodes.remove(normalizedEmail);
-        tempExpiry.remove(normalizedEmail);
+        verificationCode.setVerified(true);
+        verificationCode.setVerifiedAt(LocalDateTime.now());
+        // Extend expiry for registration completion
+        verificationCode.setExpiryTime(LocalDateTime.now().plusHours(24));
+        verificationCodeRepository.save(verificationCode);
 
         log.info("Email verified successfully for merchant: {}", request.getEmail());
     }
@@ -112,13 +128,16 @@ public class MerchantService {
 
         // Verify the email is verified
         String normalizedEmail = request.getEmail().toLowerCase();
-        LocalDateTime verifiedTime = verifiedEmails.get(normalizedEmail);
-        if (verifiedTime == null || verifiedTime.isBefore(LocalDateTime.now())) {
+        VerificationCode verificationCode = verificationCodeRepository
+                .findByEmailAndType(normalizedEmail, VerificationCode.VerificationType.MERCHANT)
+                .orElseThrow(() -> new BadRequestException("Email not verified"));
+        
+        if (!verificationCode.getVerified() || verificationCode.getExpiryTime().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("Email not verified or verification expired");
         }
 
-        // Remove the verified status
-        verifiedEmails.remove(normalizedEmail);
+        // Remove the verification code
+        verificationCodeRepository.delete(verificationCode);
 
         // Create merchant
         Merchant merchant = Merchant.builder()
