@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -236,6 +237,43 @@ public class UserService {
         return modelMapper.map(user, UserResponse.class);
     }
 
+    public TokenVerifyResponse verifyToken(String tokenString) {
+        try {
+            String email = jwtUtil.extractEmail(tokenString);
+            Long userId = jwtUtil.extractUserId(tokenString);
+            String userType = jwtUtil.extractUserType(tokenString);
+            Date expiration = jwtUtil.extractExpiration(tokenString);
+            if (expiration.before(new Date())) {
+                return TokenVerifyResponse.builder().valid(false).build();
+            }
+            return TokenVerifyResponse.builder()
+                    .valid(true)
+                    .email(email)
+                    .userId(userId)
+                    .userType(userType)
+                    .expiresAt(expiration.getTime())
+                    .build();
+        } catch (Exception e) {
+            log.warn("Token verification failed: {}", e.getMessage());
+            return TokenVerifyResponse.builder().valid(false).build();
+        }
+    }
+
+    @Transactional
+    public UserResponse updateUser(Long userId, UpdateUserRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName());
+        }
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+        User updated = userRepository.save(user);
+        log.info("User {} updated successfully", userId);
+        return modelMapper.map(updated, UserResponse.class);
+    }
+
     /**
      * Sign in or register user with Google
      * @param request GoogleSignInRequest containing Google ID token
@@ -322,4 +360,26 @@ public class UserService {
                 .build();
     }
 
+    /**
+     * Link an enrolled face to a user account
+     * @param userId The ID of the user
+     * @param request The request containing the face ID
+     * @return Updated user response
+     */
+    @Transactional
+    public UserResponse linkFace(Long userId, LinkFaceRequest request) {
+        log.info("Linking face ID {} to user ID {}", request.getFaceId(), userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Set the face ID and update status
+        user.setFaceId(request.getFaceId());
+        user.setFaceEnrolled(true);
+
+        User updatedUser = userRepository.save(user);
+        log.info("Successfully linked face ID to user ID {}", userId);
+
+        return modelMapper.map(updatedUser, UserResponse.class);
+    }
 }
