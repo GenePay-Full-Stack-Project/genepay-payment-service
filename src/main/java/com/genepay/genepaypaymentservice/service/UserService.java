@@ -5,7 +5,9 @@ import com.genepay.genepaypaymentservice.exception.BadRequestException;
 import com.genepay.genepaypaymentservice.exception.ResourceNotFoundException;
 import com.genepay.genepaypaymentservice.exception.UnauthorizedException;
 import com.genepay.genepaypaymentservice.model.User;
+import com.genepay.genepaypaymentservice.model.VerificationCode;
 import com.genepay.genepaypaymentservice.repository.UserRepository;
+import com.genepay.genepaypaymentservice.repository.VerificationCodeRepository;
 import com.genepay.genepaypaymentservice.util.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -14,11 +16,11 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -30,12 +32,11 @@ public class UserService {
     private final JwtUtil jwtUtil;
     private final ModelMapper modelMapper;
     private final EmailService emailService;
+    private final GoogleAuthService googleAuthService;
+    private final VerificationCodeRepository verificationCodeRepository;
+    private final BiometricServiceClient biometricServiceClient;
 
-
-    private final java.util.Map<String, String> tempVerificationCodes = new ConcurrentHashMap<>();
-    private final java.util.Map<String, LocalDateTime> tempExpiry = new ConcurrentHashMap<>();
-    private final java.util.Map<String, LocalDateTime> verifiedEmails = new ConcurrentHashMap<>();
-
+    @Transactional
     public void sendVerificationCode(String email) {
         log.info("Sending verification code to: {}", email);
 
@@ -46,16 +47,37 @@ public class UserService {
             throw new BadRequestException("Email already registered");
         }
 
-        String verificationCode = generateVerificationCode();
-        log.info("Verification code: {}", verificationCode);
+        // Rate limiting: Check if code was sent recently
+        Optional<VerificationCode> existingCode = verificationCodeRepository
+                .findByEmailAndType(normalizedEmail, VerificationCode.VerificationType.USER);
+        
+        if (existingCode.isPresent() && existingCode.get().getLastCodeSentTime() != null 
+                && existingCode.get().getLastCodeSentTime().isAfter(LocalDateTime.now().minusMinutes(1))) {
+            throw new BadRequestException("Please wait before requesting another verification code");
+        }
+
+        String code = generateVerificationCode();
+        log.info("Verification code: {}", code);
         LocalDateTime expiryTime = LocalDateTime.now().plusHours(24);
 
-        tempVerificationCodes.put(normalizedEmail, verificationCode);
-        tempExpiry.put(normalizedEmail, expiryTime);
+        // Delete any existing verification code for this email
+        verificationCodeRepository.deleteByEmailAndType(normalizedEmail, VerificationCode.VerificationType.USER);
+
+        // Create new verification code
+        VerificationCode verificationCode = VerificationCode.builder()
+                .email(normalizedEmail)
+                .code(code)
+                .type(VerificationCode.VerificationType.USER)
+                .expiryTime(expiryTime)
+                .verified(false)
+                .lastCodeSentTime(LocalDateTime.now())
+                .build();
+        
+        verificationCodeRepository.save(verificationCode);
 
         // Send verification email
         try {
-            emailService.sendVerificationEmail(email, "User", verificationCode);
+            emailService.sendVerificationEmail(email, "User", code);
             log.info("Verification email sent to: {}", email);
         } catch (Exception e) {
             log.error("Failed to send verification email to: {}", email, e);
@@ -81,13 +103,16 @@ public class UserService {
 
         // Verify the email is verified
         String normalizedEmail = request.getEmail().toLowerCase();
-        LocalDateTime verifiedTime = verifiedEmails.get(normalizedEmail);
-        if (verifiedTime == null || verifiedTime.isBefore(LocalDateTime.now())) {
+        VerificationCode verificationCode = verificationCodeRepository
+                .findByEmailAndType(normalizedEmail, VerificationCode.VerificationType.USER)
+                .orElseThrow(() -> new BadRequestException("Email not verified"));
+        
+        if (!verificationCode.getVerified() || verificationCode.getExpiryTime().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("Email not verified or verification expired");
         }
 
-        // Remove the verified status
-        verifiedEmails.remove(normalizedEmail);
+        // Remove the verification code
+        verificationCodeRepository.delete(verificationCode);
 
         // Create user
         User user = User.builder()
@@ -163,19 +188,24 @@ public class UserService {
 
         String normalizedEmail = request.getEmail().toLowerCase();
 
-        String storedCode = tempVerificationCodes.get(normalizedEmail);
-        LocalDateTime expiry = tempExpiry.get(normalizedEmail);
+        VerificationCode verificationCode = verificationCodeRepository
+                .findByEmailAndType(normalizedEmail, VerificationCode.VerificationType.USER)
+                .orElseThrow(() -> new BadRequestException("No verification code found for this email"));
 
-        if (storedCode == null || !storedCode.equals(request.getVerificationCode()) || expiry == null || expiry.isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Invalid or expired verification code");
+        if (!verificationCode.getCode().equals(request.getVerificationCode())) {
+            throw new BadRequestException("Invalid verification code");
+        }
+
+        if (verificationCode.getExpiryTime().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Verification code expired");
         }
 
         // Mark email as verified
-        verifiedEmails.put(normalizedEmail, LocalDateTime.now().plusHours(24));
-
-        // Remove temp code
-        tempVerificationCodes.remove(normalizedEmail);
-        tempExpiry.remove(normalizedEmail);
+        verificationCode.setVerified(true);
+        verificationCode.setVerifiedAt(LocalDateTime.now());
+        // Extend expiry for registration completion
+        verificationCode.setExpiryTime(LocalDateTime.now().plusHours(24));
+        verificationCodeRepository.save(verificationCode);
 
         log.info("Email verified successfully for: {}", request.getEmail());
     }
@@ -207,4 +237,171 @@ public class UserService {
         return modelMapper.map(user, UserResponse.class);
     }
 
+    public TokenVerifyResponse verifyToken(String tokenString) {
+        try {
+            String email = jwtUtil.extractEmail(tokenString);
+            Long userId = jwtUtil.extractUserId(tokenString);
+            String userType = jwtUtil.extractUserType(tokenString);
+            Date expiration = jwtUtil.extractExpiration(tokenString);
+            if (expiration.before(new Date())) {
+                return TokenVerifyResponse.builder().valid(false).build();
+            }
+            return TokenVerifyResponse.builder()
+                    .valid(true)
+                    .email(email)
+                    .userId(userId)
+                    .userType(userType)
+                    .expiresAt(expiration.getTime())
+                    .build();
+        } catch (Exception e) {
+            log.warn("Token verification failed: {}", e.getMessage());
+            return TokenVerifyResponse.builder().valid(false).build();
+        }
+    }
+
+    @Transactional
+    public UserResponse updateUser(Long userId, UpdateUserRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName());
+        }
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank()) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+        User updated = userRepository.save(user);
+        log.info("User {} updated successfully", userId);
+        return modelMapper.map(updated, UserResponse.class);
+    }
+
+    /**
+     * Sign in or register user with Google
+     * @param request GoogleSignInRequest containing Google ID token
+     * @return LoginResponse with JWT tokens
+     */
+    @Transactional
+    public LoginResponse googleSignIn(GoogleSignInRequest request) {
+        log.info("Google sign-in request received");
+
+        // Verify Google token and get user info
+        GoogleUserInfo googleUserInfo = googleAuthService.verifyGoogleToken(request.getIdToken());
+
+        if (!googleUserInfo.getEmailVerified()) {
+            throw new BadRequestException("Google email not verified");
+        }
+
+        // Check if user exists by googleId
+        User user = userRepository.findByGoogleId(googleUserInfo.getGoogleId())
+                .orElse(null);
+
+        // If not found by googleId, check by email
+        if (user == null) {
+            user = userRepository.findByEmail(googleUserInfo.getEmail())
+                    .orElse(null);
+
+            if (user != null) {
+                // User exists with this email but not linked to Google yet
+                // Link the Google account
+                user.setGoogleId(googleUserInfo.getGoogleId());
+                user.setEmailVerified(true);
+                user = userRepository.save(user);
+                log.info("Linked existing user account to Google: {}", user.getEmail());
+            }
+        }
+
+        // If user still doesn't exist, create new user
+        if (user == null) {
+            log.info("Creating new user from Google sign-in: {}", googleUserInfo.getEmail());
+            
+            user = User.builder()
+                    .email(googleUserInfo.getEmail())
+                    .fullName(googleUserInfo.getName())
+                    .googleId(googleUserInfo.getGoogleId())
+                    .emailVerified(true)
+                    .status(User.UserStatus.ACTIVE)
+                    .build();
+
+            user = userRepository.save(user);
+            log.info("New user created from Google sign-in: {}", user.getId());
+
+            // Send welcome email
+            try {
+                emailService.sendWelcomeEmail(user.getEmail(), user.getFullName());
+                log.info("Welcome email sent to: {}", user.getEmail());
+            } catch (Exception e) {
+                log.error("Failed to send welcome email to: {}", user.getEmail(), e);
+                // Don't fail if email fails
+            }
+        } else {
+            // Update last login time
+            user.setLastLoginAt(LocalDateTime.now());
+            user.setFailedLoginAttempts(0);
+            user.setLockedUntil(null);
+            userRepository.save(user);
+        }
+
+        // Check user status
+        if (user.getStatus() != User.UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Account is not active");
+        }
+
+        // Generate tokens
+        String token = jwtUtil.generateToken(user.getEmail(), "USER", user.getId());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail(), "USER", user.getId());
+
+        log.info("Google sign-in successful for user: {}", user.getId());
+
+        return LoginResponse.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(86400000L) // 24 hours
+                .user(modelMapper.map(user, UserResponse.class))
+                .build();
+    }
+
+    /**
+     * Remove face biometric from a user account
+     */
+    @Transactional
+    public UserResponse deleteFace(Long userId) {
+        log.info("Deleting face biometric for user ID {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setFaceId(null);
+        user.setFaceEnrolled(false);
+
+        User updatedUser = userRepository.save(user);
+        log.info("Successfully removed face biometric from user ID {}", userId);
+
+        return modelMapper.map(updatedUser, UserResponse.class);
+    }
+
+    /**
+     * Link an enrolled face to a user account
+     * @param userId The ID of the user
+     * @param request The request containing the face ID
+     * @return Updated user response
+     */
+    @Transactional
+    public UserResponse linkFace(Long userId, LinkFaceRequest request) {
+        log.info("Linking face ID {} to user ID {}", request.getFaceId(), userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Activate the face in the biometric service (sets user_id and is_active=true)
+        biometricServiceClient.updateFaceUser(userId, request.getFaceId());
+
+        // Set the face ID and update status
+        user.setFaceId(request.getFaceId());
+        user.setFaceEnrolled(true);
+
+        User updatedUser = userRepository.save(user);
+        log.info("Successfully linked face ID to user ID {}", userId);
+
+        return modelMapper.map(updatedUser, UserResponse.class);
+    }
 }
