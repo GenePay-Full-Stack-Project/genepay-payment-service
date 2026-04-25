@@ -127,6 +127,19 @@ public class UserController {
         return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Token verified", response));
     }
 
+    @DeleteMapping("/{id}/delete-face")
+    @Operation(summary = "Remove face biometric", description = "Remove the registered face biometric from a user account")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Face removed successfully"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<com.genepay.genepaypaymentservice.dto.ApiResponse<UserResponse>> deleteFace(
+            @Parameter(description = "User ID") @PathVariable Long id) {
+        log.info("Delete face request for user: {}", id);
+        UserResponse user = userService.deleteFace(id);
+        return ResponseEntity.ok(com.genepay.genepaypaymentservice.dto.ApiResponse.success("Face biometric removed successfully", user));
+    }
+
     @PutMapping("/{id}")
     @Operation(summary = "Update user profile", description = "Update user name and phone number")
     @ApiResponses(value = {

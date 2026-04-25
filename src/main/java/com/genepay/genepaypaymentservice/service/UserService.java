@@ -16,7 +16,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
@@ -35,6 +34,7 @@ public class UserService {
     private final EmailService emailService;
     private final GoogleAuthService googleAuthService;
     private final VerificationCodeRepository verificationCodeRepository;
+    private final BiometricServiceClient biometricServiceClient;
 
     @Transactional
     public void sendVerificationCode(String email) {
@@ -361,6 +361,25 @@ public class UserService {
     }
 
     /**
+     * Remove face biometric from a user account
+     */
+    @Transactional
+    public UserResponse deleteFace(Long userId) {
+        log.info("Deleting face biometric for user ID {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setFaceId(null);
+        user.setFaceEnrolled(false);
+
+        User updatedUser = userRepository.save(user);
+        log.info("Successfully removed face biometric from user ID {}", userId);
+
+        return modelMapper.map(updatedUser, UserResponse.class);
+    }
+
+    /**
      * Link an enrolled face to a user account
      * @param userId The ID of the user
      * @param request The request containing the face ID
@@ -372,6 +391,9 @@ public class UserService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Activate the face in the biometric service (sets user_id and is_active=true)
+        biometricServiceClient.updateFaceUser(userId, request.getFaceId());
 
         // Set the face ID and update status
         user.setFaceId(request.getFaceId());

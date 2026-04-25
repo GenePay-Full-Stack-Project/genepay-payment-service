@@ -57,4 +57,28 @@ public class BiometricServiceClient {
             throw new RuntimeException("Face search failed: " + e.getMessage());
         }
     }
+
+    public void updateFaceUser(Long userId, String faceId) {
+        try {
+            WebClient webClient = webClientBuilder.baseUrl(biometricServiceUrl).build();
+
+            Map<String, Object> request = Map.of(
+                    "user_id", userId,
+                    "face_id", faceId
+            );
+
+            webClient.put()
+                    .uri("/biometric/update-face-user")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .timeout(java.time.Duration.ofMillis(timeout))
+                    .block();
+
+            log.info("Successfully activated face {} for user {} in biometric service", faceId, userId);
+        } catch (Exception e) {
+            log.error("Error activating face in biometric service for user {}", userId, e);
+            throw new RuntimeException("Failed to activate face in biometric service: " + e.getMessage());
+        }
+    }
 }

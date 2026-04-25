@@ -141,7 +141,7 @@ public class MerchantService {
 
         // Create merchant
         Merchant merchant = Merchant.builder()
-                .email(request.getEmail())
+                .email(normalizedEmail)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .businessName(request.getBusinessName())
                 .ownerName(request.getOwnerName())
@@ -170,7 +170,7 @@ public class MerchantService {
     public LoginResponse loginMerchant(LoginRequest request) {
         log.info("Merchant login attempt: {}", request.getEmail());
 
-        Merchant merchant = merchantRepository.findByEmail(request.getEmail())
+        Merchant merchant = merchantRepository.findByEmail(request.getEmail().toLowerCase())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
         // Check if account is locked
